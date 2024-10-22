@@ -1,0 +1,1402 @@
+[
+  {
+    "name": "Actinomycosis cervicofacial",
+    "description": "Infección bacteriana crónica que afecta principalmente al área cervicofacial.",
+    "code": "A422",
+    "category": "Infecciones bacterianas"
+  },
+  {
+    "name": "Gingivoestomatitis y faringoamigdalitis herpética",
+    "description": "Infección por el virus del herpes que afecta la cavidad oral y la garganta.",
+    "code": "B002",
+    "category": "Infecciones virales"
+  },
+  {
+    "name": "Infección debida al virus del herpes, no especificada",
+    "description": "Infección viral causada por el virus del herpes sin especificar la localización.",
+    "code": "B009",
+    "category": "Infecciones virales"
+  },
+  {
+    "name": "Estomatitis vesicular enteroviral con exantema",
+    "description": "Inflamación de la boca causada por un enterovirus, con vesículas y erupciones.",
+    "code": "B084",
+    "category": "Infecciones virales"
+  },
+  {
+    "name": "Otras enfermedades infecciosas y las no especificadas",
+    "description": "Categoría general para otras infecciones no especificadas.",
+    "code": "B99",
+    "category": "Enfermedades infecciosas"
+  },
+  {
+    "name": "Tumor maligno del labio superior, cara externa",
+    "description": "Cáncer maligno que afecta la parte externa del labio superior.",
+    "code": "C000",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno del labio inferior, cara externa",
+    "description": "Cáncer maligno que afecta la parte externa del labio inferior.",
+    "code": "C001",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno del labio, cara externa, sin otra especificación",
+    "description": "Cáncer maligno que afecta la cara externa del labio sin más detalles.",
+    "code": "C002",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno del labio superior, cara interna",
+    "description": "Cáncer maligno que afecta la parte interna del labio superior.",
+    "code": "C003",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno del labio inferior, cara interna",
+    "description": "Cáncer maligno que afecta la parte interna del labio inferior.",
+    "code": "C004",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno del labio, cara interna, sin otra especificación",
+    "description": "Cáncer maligno que afecta la cara interna del labio sin más detalles.",
+    "code": "C005",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la comisura labial",
+    "description": "Cáncer maligno que afecta la comisura del labio.",
+    "code": "C006",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Lesión de sitios contiguos del labio",
+    "description": "Cáncer maligno que afecta áreas contiguas al labio.",
+    "code": "C008",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno del labio, parte no especificada",
+    "description": "Cáncer maligno del labio sin especificar la localización exacta.",
+    "code": "C009",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la base de la lengua",
+    "description": "Cáncer maligno que afecta la base de la lengua.",
+    "code": "C01",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la cara dorsal de la lengua",
+    "description": "Cáncer maligno que afecta la parte superior de la lengua.",
+    "code": "C020",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno del borde de la lengua",
+    "description": "Cáncer maligno que afecta los bordes laterales de la lengua.",
+    "code": "C021",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la cara ventral de la lengua",
+    "description": "Cáncer maligno que afecta la parte inferior de la lengua.",
+    "code": "C022",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de los dos tercios anteriores de la lengua, parte no especificada",
+    "description": "Cáncer maligno que afecta los dos tercios anteriores de la lengua.",
+    "code": "C023",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la amígdala lingual",
+    "description": "Cáncer maligno que afecta la amígdala lingual.",
+    "code": "C024",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Lesión de sitios contiguos de la lengua",
+    "description": "Cáncer que afecta áreas contiguas a la lengua.",
+    "code": "C028",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la lengua, parte no especificada",
+    "description": "Cáncer maligno de la lengua sin especificar el sitio.",
+    "code": "C029",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la encía superior",
+    "description": "Cáncer maligno que afecta la encía superior.",
+    "code": "C030",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la encía inferior",
+    "description": "Cáncer maligno que afecta la encía inferior.",
+    "code": "C031",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la encía, parte no especificada",
+    "description": "Cáncer maligno de la encía sin especificar la localización.",
+    "code": "C039",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la parte anterior del piso de la boca",
+    "description": "Cáncer maligno que afecta la parte anterior del piso de la boca.",
+    "code": "C040",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la parte lateral del piso de la boca",
+    "description": "Cáncer maligno que afecta la parte lateral del piso de la boca.",
+    "code": "C041",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Lesión de sitios contiguos del piso de la boca",
+    "description": "Cáncer que afecta áreas cercanas al piso de la boca.",
+    "code": "C048",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno del piso de la boca, parte no especificada",
+    "description": "Cáncer maligno del piso de la boca sin especificar la localización.",
+    "code": "C049",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno del paladar duro",
+    "description": "Cáncer maligno que afecta el paladar duro.",
+    "code": "C050",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno del paladar blando",
+    "description": "Cáncer maligno que afecta el paladar blando.",
+    "code": "C051",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la úvula",
+    "description": "Cáncer maligno que afecta la úvula.",
+    "code": "C052",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Lesión de sitios contiguos del paladar",
+    "description": "Cáncer que afecta áreas cercanas al paladar.",
+    "code": "C058",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno del paladar, parte no especificada",
+    "description": "Cáncer maligno del paladar sin especificar la localización.",
+    "code": "C059",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la mucosa de la mejilla",
+    "description": "Cáncer maligno que afecta la mucosa de la mejilla.",
+    "code": "C060",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno del vestíbulo de la boca",
+    "description": "Cáncer maligno que afecta el vestíbulo oral.",
+    "code": "C061",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno del área retromolar",
+    "description": "Cáncer maligno que afecta la zona retromolar.",
+    "code": "C062",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Lesión de sitios contiguos de otras partes de la boca",
+    "description": "Cáncer maligno que afecta áreas cercanas y no especificadas de la boca.",
+    "code": "C068",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la boca, parte no especificada",
+    "description": "Cáncer maligno de la boca sin especificar el sitio.",
+    "code": "C069",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la glándula parótida",
+    "description": "Cáncer maligno que afecta la glándula parótida.",
+    "code": "C07",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la glándula submaxilar",
+    "description": "Cáncer maligno que afecta la glándula submaxilar.",
+    "code": "C080",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la glándula sublingual",
+    "description": "Cáncer maligno que afecta la glándula sublingual.",
+    "code": "C081",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Lesión de sitios contiguos de las glándulas salivares mayores",
+    "description": "Cáncer maligno que afecta áreas contiguas a las glándulas salivares mayores.",
+    "code": "C088",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de glándula salival mayor, no especificada",
+    "description": "Cáncer maligno de una glándula salival mayor sin especificar el sitio.",
+    "code": "C089",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Lesión de sitios contiguos de la amígdala",
+    "description": "Cáncer que afecta áreas cercanas a la amígdala.",
+    "code": "C098",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la orofaringe, parte no especificada",
+    "description": "Cáncer maligno de la orofaringe sin especificar el sitio.",
+    "code": "C109",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Lesión de sitios contiguos del labio, cavidad bucal y laringe",
+    "description": "Cáncer maligno que afecta áreas cercanas al labio, cavidad bucal y laringe.",
+    "code": "C148",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno del seno maxilar",
+    "description": "Cáncer maligno que afecta el seno maxilar.",
+    "code": "C310",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Lesión de sitios contiguos de los senos paranasales",
+    "description": "Cáncer maligno que afecta áreas cercanas a los senos paranasales.",
+    "code": "C318",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno del seno paranasal no especificado",
+    "description": "Cáncer maligno de un seno paranasal sin especificar el sitio.",
+    "code": "C319",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de los huesos del cráneo y de la cara",
+    "description": "Cáncer maligno que afecta los huesos craneales y faciales.",
+    "code": "C410",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno del hueso del maxilar inferior",
+    "description": "Cáncer maligno que afecta el hueso mandibular.",
+    "code": "C411",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Melanoma maligno del labio",
+    "description": "Cáncer maligno tipo melanoma que afecta el labio.",
+    "code": "C430",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la piel del labio",
+    "description": "Cáncer maligno que afecta la piel del labio.",
+    "code": "C440",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Sarcoma de Kaposi del paladar",
+    "description": "Cáncer maligno tipo sarcoma que afecta el paladar.",
+    "code": "C462",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Tumor maligno de la cabeza, cara y cuello",
+    "description": "Cáncer maligno que afecta la región de la cabeza, cara y cuello.",
+    "code": "C760",
+    "category": "Tumores malignos"
+  },
+  {
+    "name": "Melanoma in situ del labio",
+    "description": "Melanoma que no ha invadido tejidos más profundos en el labio.",
+    "code": "D030",
+    "category": "Tumores benignos"
+  },
+  {
+    "name": "Carcinoma in situ de la piel del labio",
+    "description": "Carcinoma localizado en la piel del labio que no ha invadido más profundamente.",
+    "code": "D040",
+    "category": "Tumores benignos"
+  },
+  {
+    "name": "Anodoncia",
+    "description": "Falta de dientes debido a un defecto en el desarrollo.",
+    "code": "K000",
+    "category": "Trastornos del desarrollo dental"
+  },
+  {
+    "name": "Dientes supernumerarios",
+    "description": "Presencia de dientes adicionales.",
+    "code": "K001",
+    "category": "Trastornos del desarrollo dental"
+  },
+  {
+    "name": "Anomalías del tamaño y forma del diente",
+    "description": "Dientes con formas o tamaños anormales.",
+    "code": "K002",
+    "category": "Trastornos del desarrollo dental"
+  },
+  {
+    "name": "Dientes moteados",
+    "description": "Decoloración de los dientes, a menudo relacionada con la exposición excesiva al flúor.",
+    "code": "K003",
+    "category": "Trastornos del desarrollo dental"
+  },
+  {
+    "name": "Alteraciones en la formación dentaria",
+    "description": "Problemas en el desarrollo de la estructura dental.",
+    "code": "K004",
+    "category": "Trastornos del desarrollo dental"
+  },
+  {
+    "name": "Alteraciones hereditarias de la estructura dentaria, no clasificadas en otra parte",
+    "description": "Defectos genéticos en la estructura dental que no se incluyen en otras categorías.",
+    "code": "K005",
+    "category": "Trastornos del desarrollo dental"
+  },
+  {
+    "name": "Alteraciones en la erupción dentaria",
+    "description": "Problemas relacionados con la salida de los dientes.",
+    "code": "K006",
+    "category": "Trastornos del desarrollo dental"
+  },
+  {
+    "name": "Síndrome de la erupción dentaria",
+    "description": "Conjunto de síntomas asociados a la erupción dental.",
+    "code": "K007",
+    "category": "Trastornos del desarrollo dental"
+  },
+  {
+    "name": "Otras alteraciones del desarrollo de los dientes",
+    "description": "Anomalías en el desarrollo dental no clasificadas en otras categorías.",
+    "code": "K008",
+    "category": "Trastornos del desarrollo dental"
+  },
+  {
+    "name": "Trastorno del desarrollo de los dientes, no especificado",
+    "description": "Problemas de desarrollo dental no especificados.",
+    "code": "K009",
+    "category": "Trastornos del desarrollo dental"
+  },
+  {
+    "name": "Dientes incluidos",
+    "description": "Dientes que no han salido completamente y están retenidos en el hueso.",
+    "code": "K010",
+    "category": "Trastornos del desarrollo dental"
+  },
+  {
+    "name": "Dientes impactados",
+    "description": "Dientes que no pueden emerger debido a la falta de espacio u otras obstrucciones.",
+    "code": "K011",
+    "category": "Trastornos del desarrollo dental"
+  },
+  {
+    "name": "Caries limitada al esmalte",
+    "description": "Caries que afecta solo la capa externa del diente (esmalte).",
+    "code": "K020",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Caries de la dentina",
+    "description": "Caries que ha avanzado más allá del esmalte y ha alcanzado la dentina.",
+    "code": "K021",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Caries del cemento",
+    "description": "Caries que afecta la capa de cemento en la raíz del diente.",
+    "code": "K022",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Caries dental detenida",
+    "description": "Caries que ha dejado de progresar, posiblemente debido a cambios en las condiciones orales.",
+    "code": "K023",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Odontoclasia",
+    "description": "Desgaste anormal de los dientes.",
+    "code": "K024",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Otras caries dentales",
+    "description": "Caries no clasificadas en otras categorías.",
+    "code": "K028",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Caries dental, no especificada",
+    "description": "Caries de etiología o extensión no especificada.",
+    "code": "K029",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Atrición excesiva de los dientes",
+    "description": "Desgaste excesivo de los dientes debido a la fricción o al contacto entre superficies dentales.",
+    "code": "K030",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Abrasión de los dientes",
+    "description": "Desgaste de los dientes causado por factores mecánicos externos.",
+    "code": "K031",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Erosión de los dientes",
+    "description": "Pérdida de estructura dental causada por ácidos no bacterianos.",
+    "code": "K032",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Reabsorción patológica de los dientes",
+    "description": "Desgaste anormal de la estructura dental debido a un proceso patológico.",
+    "code": "K033",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Hipercementosis",
+    "description": "Formación excesiva de cemento en la raíz del diente.",
+    "code": "K034",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Anquilosis dental",
+    "description": "Fusión anormal del diente con el hueso circundante.",
+    "code": "K035",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Depósitos en los dientes",
+    "description": "Acumulación de placa, sarro u otros depósitos en la superficie dental.",
+    "code": "K036",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Cambios posteruptivos del color de los tejidos dentales duros",
+    "description": "Decoloración de los dientes después de la erupción, causada por factores externos o internos.",
+    "code": "K037",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Otras enfermedades especificadas de los tejidos duros de los dientes",
+    "description": "Enfermedades que afectan los tejidos duros de los dientes, no clasificadas en otras categorías.",
+    "code": "K038",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Enfermedad no especificada de los tejidos dentales duros",
+    "description": "Afección no especificada que afecta los tejidos duros de los dientes.",
+    "code": "K039",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Pulpitis",
+    "description": "Inflamación de la pulpa dental.",
+    "code": "K040",
+    "category": "Enfermedades de la pulpa dental"
+  },
+  {
+    "name": "Necrosis de la pulpa",
+    "description": "Muerte del tejido pulpar.",
+    "code": "K041",
+    "category": "Enfermedades de la pulpa dental"
+  },
+  {
+    "name": "Degeneración de la pulpa",
+    "description": "Deterioro o degeneración del tejido pulpar.",
+    "code": "K042",
+    "category": "Enfermedades de la pulpa dental"
+  },
+  {
+    "name": "Formación anormal de tejido duro en la pulpa",
+    "description": "Formación de tejido calcificado dentro de la pulpa dental.",
+    "code": "K043",
+    "category": "Enfermedades de la pulpa dental"
+  },
+  {
+    "name": "Periodontitis apical aguda originada en la pulpa",
+    "description": "Inflamación aguda del periodonto apical originada en la pulpa.",
+    "code": "K044",
+    "category": "Enfermedades de la pulpa dental"
+  },
+  {
+    "name": "Periodontitis apical crónica",
+    "description": "Inflamación crónica del periodonto apical.",
+    "code": "K045",
+    "category": "Enfermedades de la pulpa dental"
+  },
+  {
+    "name": "Absceso periapical con fístula",
+    "description": "Colección de pus en el área periapical acompañada de una fístula.",
+    "code": "K046",
+    "category": "Enfermedades de la pulpa dental"
+  },
+  {
+    "name": "Absceso periapical sin fístula",
+    "description": "Colección de pus en el área periapical sin la formación de una fístula.",
+    "code": "K047",
+    "category": "Enfermedades de la pulpa dental"
+  },
+  {
+    "name": "Quiste radicular",
+    "description": "Quiste que se forma en la raíz del diente debido a una infección.",
+    "code": "K048",
+    "category": "Enfermedades de la pulpa dental"
+  },
+  {
+    "name": "Otras enfermedades y las no especificadas de la pulpa y del tejido periapical",
+    "description": "Afecciones que afectan la pulpa dental y el tejido periapical, no clasificadas en otras categorías.",
+    "code": "K049",
+    "category": "Enfermedades de la pulpa dental"
+  },
+  {
+    "name": "Gingivitis aguda",
+    "description": "Inflamación aguda de las encías.",
+    "code": "K050",
+    "category": "Enfermedades periodontales"
+  },
+  {
+    "name": "Gingivitis crónica",
+    "description": "Inflamación crónica de las encías.",
+    "code": "K051",
+    "category": "Enfermedades periodontales"
+  },
+  {
+    "name": "Periodontitis aguda",
+    "description": "Inflamación aguda de los tejidos que rodean los dientes.",
+    "code": "K052",
+    "category": "Enfermedades periodontales"
+  },
+  {
+    "name": "Periodontitis crónica",
+    "description": "Inflamación crónica de los tejidos periodontales.",
+    "code": "K053",
+    "category": "Enfermedades periodontales"
+  },
+  {
+    "name": "Periodontosis",
+    "description": "Degeneración del periodonto sin inflamación significativa.",
+    "code": "K054",
+    "category": "Enfermedades periodontales"
+  },
+  {
+    "name": "Otras enfermedades periodontales",
+    "description": "Afecciones que afectan los tejidos periodontales no clasificadas en otras categorías.",
+    "code": "K055",
+    "category": "Enfermedades periodontales"
+  },
+  {
+    "name": "Enfermedad de periodonto, no especificada",
+    "description": "Enfermedad del tejido periodontal cuya etiología no está claramente definida.",
+    "code": "K056",
+    "category": "Enfermedades periodontales"
+  },
+  {
+    "name": "Retracción gingival",
+    "description": "Descenso del tejido gingival hacia la raíz del diente.",
+    "code": "K060",
+    "category": "Enfermedades periodontales"
+  },
+  {
+    "name": "Hiperplasia gingival",
+    "description": "Aumento anormal del volumen del tejido gingival.",
+    "code": "K061",
+    "category": "Enfermedades periodontales"
+  },
+  {
+    "name": "Lesiones de la encía y de la zona edéntula asociadas con traumatismo",
+    "description": "Lesiones en las encías o áreas desdentadas causadas por un trauma.",
+    "code": "K062",
+    "category": "Enfermedades periodontales"
+  },
+  {
+    "name": "Otros trastornos especificados de la encía y de la zona edéntula",
+    "description": "Afecciones de la encía y zonas sin dientes no clasificadas en otras categorías.",
+    "code": "K068",
+    "category": "Enfermedades periodontales"
+  },
+  {
+    "name": "Trastorno no especificado de la encía y de la zona edéntula",
+    "description": "Afección de la encía y zonas desdentadas cuya causa no está claramente definida.",
+    "code": "K069",
+    "category": "Enfermedades periodontales"
+  },
+  {
+    "name": "Anomalías evidentes del tamaño de los maxilares",
+    "description": "Problemas en el tamaño de los huesos maxilares.",
+    "code": "K070",
+    "category": "Anomalías dentofaciales"
+  },
+  {
+    "name": "Anomalías de la relación maxilobasilar",
+    "description": "Problemas en la relación entre los maxilares y la base del cráneo.",
+    "code": "K071",
+    "category": "Anomalías dentofaciales"
+  },
+  {
+    "name": "Anomalías de la relación entre los arcos dentarios",
+    "description": "Problemas en la relación entre los arcos dentales.",
+    "code": "K072",
+    "category": "Anomalías dentofaciales"
+  },
+  {
+    "name": "Anomalías de la posición del diente",
+    "description": "Malposición o desplazamiento de los dientes.",
+    "code": "K073",
+    "category": "Anomalías dentofaciales"
+  },
+  {
+    "name": "Maloclusión de tipo no especificado",
+    "description": "Problemas de la alineación dental no especificados.",
+    "code": "K074",
+    "category": "Anomalías dentofaciales"
+  },
+  {
+    "name": "Anomalías dentofaciales funcionales",
+    "description": "Problemas funcionales relacionados con las estructuras dentales y faciales.",
+    "code": "K075",
+    "category": "Anomalías dentofaciales"
+  },
+  {
+    "name": "Trastornos de la articulación temporomaxilar",
+    "description": "Problemas que afectan la articulación entre el maxilar y la mandíbula.",
+    "code": "K076",
+    "category": "Anomalías dentofaciales"
+  },
+  {
+    "name": "Otras anomalías dentofaciales",
+    "description": "Problemas estructurales de la cara y la boca no clasificados en otras categorías.",
+    "code": "K078",
+    "category": "Anomalías dentofaciales"
+  },
+  {
+    "name": "Anomalía dentofacial, no especificada",
+    "description": "Anomalía de las estructuras dentofaciales cuya causa no está claramente definida.",
+    "code": "K079",
+    "category": "Anomalías dentofaciales"
+  },
+  {
+    "name": "Exfoliación de los dientes debida a causas sistémicas",
+    "description": "Pérdida de los dientes provocada por enfermedades o condiciones sistémicas.",
+    "code": "K080",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Pérdida de dientes debida a accidente, extracción o enfermedad periodontal local",
+    "description": "Pérdida de dientes causada por accidente, extracción o enfermedades periodontales.",
+    "code": "K081",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Atrofia de reborde alveolar desdentado",
+    "description": "Pérdida de masa ósea en el reborde alveolar debido a la falta de dientes.",
+    "code": "K082",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Raíz dental retenida",
+    "description": "Presencia de una raíz dental que no ha sido extraída.",
+    "code": "K083",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Otras afecciones especificadas de los dientes y de sus estructuras de sostén",
+    "description": "Afecciones diversas que afectan los dientes y sus estructuras de soporte no clasificadas en otras categorías.",
+    "code": "K088",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Trastorno de los dientes y de sus estructuras de sostén, no especificado",
+    "description": "Trastorno de los dientes y de sus estructuras de soporte cuya etiología no está definida.",
+    "code": "K089",
+    "category": "Enfermedades dentales"
+  },
+  {
+    "name": "Estomatitis aftosa recurrente",
+    "description": "Inflamación de la mucosa bucal con formación de úlceras recurrentes.",
+    "code": "K120",
+    "category": "Enfermedades bucales"
+  },
+  {
+    "name": "Otras formas de estomatitis",
+    "description": "Inflamación de la mucosa oral que no se ajusta a las formas de estomatitis ya especificadas.",
+    "code": "K121",
+    "category": "Enfermedades bucales"
+  },
+  {
+    "name": "Celulitis y absceso de boca",
+    "description": "Infección severa de los tejidos bucales que resulta en la formación de abscesos.",
+    "code": "K122",
+    "category": "Infecciones bucales"
+  },
+  {
+    "name": "Enfermedades de los labios",
+    "description": "Afecciones de los labios que no están clasificadas en otras categorías.",
+    "code": "K123",
+    "category": "Enfermedades bucales"
+  },
+  {
+    "name": "Mordedura del labio y de la mejilla",
+    "description": "Lesiones autoinfligidas o accidentales en el labio o la mejilla.",
+    "code": "K131",
+    "category": "Lesiones bucales"
+  },
+  {
+    "name": "Leucoplasia y otras alteraciones del epitelio bucal, incluyendo la lengua",
+    "description": "Placas blancas u otras alteraciones en la mucosa oral que pueden ser precancerosas.",
+    "code": "K132",
+    "category": "Alteraciones mucosas"
+  },
+  {
+    "name": "Leucoplasia pilosa",
+    "description": "Placas blancas vellosas que aparecen generalmente en la lengua, típicamente relacionadas con infecciones por VIH.",
+    "code": "K133",
+    "category": "Alteraciones mucosas"
+  },
+  {
+    "name": "Granuloma y lesiones semejantes de la mucosa bucal",
+    "description": "Formación de granulomas u otras lesiones inflamatorias en la mucosa oral.",
+    "code": "K134",
+    "category": "Alteraciones mucosas"
+  },
+  {
+    "name": "Fibrosis de la submucosa bucal",
+    "description": "Condición crónica de fibrosis progresiva en la boca que puede limitar la apertura oral.",
+    "code": "K135",
+    "category": "Alteraciones mucosas"
+  },
+  {
+    "name": "Hiperplasia irritativa de la mucosa bucal",
+    "description": "Crecimiento excesivo de tejido mucoso debido a irritación crónica.",
+    "code": "K136",
+    "category": "Alteraciones mucosas"
+  },
+  {
+    "name": "Otras lesiones y las no especificadas de la mucosa bucal",
+    "description": "Lesiones diversas que afectan la mucosa oral sin clasificación específica.",
+    "code": "K137",
+    "category": "Alteraciones mucosas"
+  },
+  {
+    "name": "Glositis",
+    "description": "Inflamación de la lengua.",
+    "code": "K140",
+    "category": "Enfermedades de la lengua"
+  },
+  {
+    "name": "Lengua geográfica",
+    "description": "Afección benigna de la lengua caracterizada por áreas lisas desprovistas de papilas.",
+    "code": "K141",
+    "category": "Enfermedades de la lengua"
+  },
+  {
+    "name": "Glositis romboidea mediana",
+    "description": "Condición benigna de la lengua caracterizada por una mancha roja en la línea media de la lengua.",
+    "code": "K142",
+    "category": "Enfermedades de la lengua"
+  },
+  {
+    "name": "Hipertrofia de las papilas linguales",
+    "description": "Crecimiento excesivo de las papilas linguales.",
+    "code": "K143",
+    "category": "Enfermedades de la lengua"
+  },
+  {
+    "name": "Atrofia de las papilas linguales",
+    "description": "Pérdida de las papilas linguales.",
+    "code": "K144",
+    "category": "Enfermedades de la lengua"
+  },
+  {
+    "name": "Lengua plegada",
+    "description": "Lengua con múltiples pliegues o fisuras.",
+    "code": "K145",
+    "category": "Enfermedades de la lengua"
+  },
+  {
+    "name": "Glosodinia",
+    "description": "Dolor o ardor en la lengua sin causa aparente.",
+    "code": "K146",
+    "category": "Enfermedades de la lengua"
+  },
+  {
+    "name": "Otras enfermedades de la lengua",
+    "description": "Enfermedades diversas que afectan la lengua no clasificadas en otras categorías.",
+    "code": "K148",
+    "category": "Enfermedades de la lengua"
+  },
+  {
+    "name": "Enfermedad de la lengua, no especificada",
+    "description": "Trastorno de la lengua cuya causa no está determinada.",
+    "code": "K149",
+    "category": "Enfermedades de la lengua"
+  },
+  {
+    "name": "Celulitis de la cara",
+    "description": "Infección severa que afecta los tejidos blandos de la cara.",
+    "code": "L032",
+    "category": "Infecciones faciales"
+  },
+  {
+    "name": "Reacción tóxica a la anestesia local administrada durante el embarazo",
+    "description": "Efectos adversos graves derivados de la administración de anestesia local durante el embarazo.",
+    "code": "O293",
+    "category": "Complicaciones de anestesia"
+  },
+  {
+    "name": "Fisura del paladar duro",
+    "description": "Falla congénita que resulta en una hendidura en el paladar duro.",
+    "code": "Q351",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Fisura del paladar blando",
+    "description": "Hendidura congénita en el paladar blando.",
+    "code": "Q353",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Fisura del paladar duro y del paladar blando",
+    "description": "Hendidura congénita que afecta tanto el paladar duro como el blando.",
+    "code": "Q355",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Fisura del paladar, línea media",
+    "description": "Hendidura congénita en la línea media del paladar.",
+    "code": "Q356",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Fisura de la úvula",
+    "description": "Hendidura congénita de la úvula.",
+    "code": "Q357",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Fisura del paladar, sin otra especificación",
+    "description": "Hendidura congénita del paladar no especificada.",
+    "code": "Q359",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Labio leporino bilateral",
+    "description": "Fisura congénita que afecta ambos lados del labio superior.",
+    "code": "Q360",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Labio leporino, línea media",
+    "description": "Fisura congénita en la línea media del labio superior.",
+    "code": "Q361",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Labio leporino unilateral",
+    "description": "Fisura congénita que afecta un solo lado del labio superior.",
+    "code": "Q369",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Fisura del paladar duro con labio leporino bilateral",
+    "description": "Hendidura congénita del paladar duro acompañada de labio leporino bilateral.",
+    "code": "Q370",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Fisura del paladar duro con labio leporino unilateral",
+    "description": "Hendidura congénita del paladar duro acompañada de labio leporino unilateral.",
+    "code": "Q371",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Fisura del paladar blando con labio leporino bilateral",
+    "description": "Hendidura congénita del paladar blando acompañada de labio leporino bilateral.",
+    "code": "Q372",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Fisura del paladar blando con labio leporino unilateral",
+    "description": "Hendidura congénita del paladar blando acompañada de labio leporino unilateral.",
+    "code": "Q373",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Fisura del paladar duro y blando con labio leporino bilateral",
+    "description": "Hendidura congénita del paladar duro y blando acompañada de labio leporino bilateral.",
+    "code": "Q374",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Fisura del paladar duro y blando con labio leporino unilateral",
+    "description": "Hendidura congénita del paladar duro y blando acompañada de labio leporino unilateral.",
+    "code": "Q375",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Fisura del paladar con labio leporino bilateral, sin otra especificación",
+    "description": "Hendidura congénita del paladar acompañada de labio leporino bilateral, no especificada.",
+    "code": "Q378",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Fisura del paladar con labio leporino unilateral, sin otra especificación",
+    "description": "Hendidura congénita del paladar acompañada de labio leporino unilateral, no especificada.",
+    "code": "Q379",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Malformaciones congénitas de los labios, no clasificadas en otra parte",
+    "description": "Alteraciones congénitas de los labios sin clasificación en otra categoría.",
+    "code": "Q380",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Anquiloglosia",
+    "description": "Lengua anormalmente unida al piso de la boca, también conocido como frenillo corto.",
+    "code": "Q381",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Macroglosia",
+    "description": "Lengua anormalmente agrandada.",
+    "code": "Q382",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Otras malformaciones congénitas de la lengua",
+    "description": "Alteraciones congénitas de la lengua no especificadas.",
+    "code": "Q383",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Malformaciones congénitas de las glándulas y conductos salivales",
+    "description": "Alteraciones congénitas de las glándulas y conductos salivales.",
+    "code": "Q384",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Malformaciones congénitas del paladar, no clasificadas en otra parte",
+    "description": "Alteraciones congénitas del paladar sin clasificación específica.",
+    "code": "Q385",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Otras malformaciones congénitas de la boca",
+    "description": "Alteraciones congénitas de la cavidad oral sin clasificación específica.",
+    "code": "Q386",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Disostosis maxilofacial",
+    "description": "Desarrollo anormal de los huesos de la cara y el cráneo.",
+    "code": "Q754",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Otras malformaciones congénitas especificadas de los huesos del cráneo y de la cara",
+    "description": "Malformaciones óseas de la cara y el cráneo no especificadas.",
+    "code": "Q758",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Malformación congénita no especificada de los huesos del cráneo y de la cara",
+    "description": "Alteración congénita de los huesos craneofaciales sin clasificación.",
+    "code": "Q759",
+    "category": "Malformaciones congénitas"
+  },
+  {
+    "name": "Epistaxis",
+    "description": "Sangrado nasal espontáneo o causado por traumatismo.",
+    "code": "R040",
+    "category": "Condiciones de la nariz"
+  },
+  {
+    "name": "Herida de la mejilla y de la región temporomandibular",
+    "description": "Lesión que afecta la mejilla y la articulación temporomandibular.",
+    "code": "S014",
+    "category": "Lesiones traumáticas"
+  },
+  {
+    "name": "Herida del labio y de la cavidad bucal",
+    "description": "Lesión que afecta el labio y el interior de la cavidad bucal.",
+    "code": "S015",
+    "category": "Lesiones traumáticas"
+  },
+  {
+    "name": "Fractura del suelo de la órbita",
+    "description": "Rotura ósea en la base de la cavidad ocular, comúnmente causada por traumatismo.",
+    "code": "S023",
+    "category": "Fracturas"
+  },
+  {
+    "name": "Fractura del malar y del hueso maxilar superior",
+    "description": "Rotura de los huesos de la mejilla y el maxilar superior debido a traumatismo.",
+    "code": "S024",
+    "category": "Fracturas"
+  },
+  {
+    "name": "Fractura de los dientes",
+    "description": "Rotura o fisura en la estructura de uno o varios dientes.",
+    "code": "S025",
+    "category": "Fracturas"
+  },
+  {
+    "name": "Fractura del maxilar inferior",
+    "description": "Rotura ósea en la mandíbula inferior causada por un golpe o accidente.",
+    "code": "S026",
+    "category": "Fracturas"
+  },
+  {
+    "name": "Fracturas múltiples que comprometen el cráneo y los huesos de la cara",
+    "description": "Lesiones que afectan varios huesos de la cabeza y cara simultáneamente.",
+    "code": "S027",
+    "category": "Fracturas"
+  },
+  {
+    "name": "Fractura de otros huesos del cráneo y de la cara",
+    "description": "Rotura ósea en partes no especificadas del cráneo o la cara.",
+    "code": "S028",
+    "category": "Fracturas"
+  },
+  {
+    "name": "Luxación del maxilar",
+    "description": "Desplazamiento de la articulación de la mandíbula.",
+    "code": "S030",
+    "category": "Lesiones traumáticas"
+  },
+  {
+    "name": "Luxación de diente",
+    "description": "Desplazamiento o aflojamiento de un diente debido a traumatismo.",
+    "code": "S032",
+    "category": "Lesiones traumáticas"
+  },
+  {
+    "name": "Esguinces y torceduras del maxilar",
+    "description": "Estiramiento o desgarro de los ligamentos que rodean la mandíbula.",
+    "code": "S034",
+    "category": "Lesiones traumáticas"
+  },
+  {
+    "name": "Traumatismo del nervio trigémino [V par]",
+    "description": "Daño o lesión del nervio trigémino, responsable de la sensibilidad facial.",
+    "code": "S043",
+    "category": "Lesiones traumáticas"
+  },
+  {
+    "name": "Traumatismo del nervio facial [VII par]",
+    "description": "Lesión en el nervio facial que puede causar parálisis o disfunción motora.",
+    "code": "S045",
+    "category": "Lesiones traumáticas"
+  },
+  {
+    "name": "Traumatismo de nervios craneales, no especificado",
+    "description": "Daño a los nervios craneales que no ha sido especificado.",
+    "code": "S049",
+    "category": "Lesiones traumáticas"
+  },
+  {
+    "name": "Cuerpo extraño en seno paranasal",
+    "description": "Objeto no natural alojado en los senos paranasales.",
+    "code": "T170",
+    "category": "Lesiones traumáticas"
+  },
+  {
+    "name": "Cuerpo extraño en la boca",
+    "description": "Objeto extraño dentro de la cavidad bucal.",
+    "code": "T180",
+    "category": "Lesiones traumáticas"
+  },
+  {
+    "name": "Envenenamiento por agentes tópicos que afectan principalmente la piel y las membranas mucosas",
+    "description": "Reacción tóxica por sustancias tópicas usadas en piel o membranas mucosas.",
+    "code": "T490",
+    "category": "Envenenamiento"
+  },
+  {
+    "name": "Envenenamiento por antipruríticos",
+    "description": "Reacción adversa grave al uso de medicamentos antipruríticos tópicos.",
+    "code": "T491",
+    "category": "Envenenamiento"
+  },
+  {
+    "name": "Envenenamiento por astringentes y detergentes locales",
+    "description": "Toxicidad causada por el uso de astringentes o detergentes tópicos.",
+    "code": "T492",
+    "category": "Envenenamiento"
+  },
+  {
+    "name": "Envenenamiento por emolientes, demulcentes y protectores",
+    "description": "Reacción tóxica a emolientes o productos protectores aplicados en la piel o mucosas.",
+    "code": "T493",
+    "category": "Envenenamiento"
+  },
+  {
+    "name": "Envenenamiento por queratolíticos y queratoplásticos",
+    "description": "Intoxicación por uso de agentes queratolíticos o queratoplásticos.",
+    "code": "T494",
+    "category": "Envenenamiento"
+  },
+  {
+    "name": "Envenenamiento por drogas oftalmológicas",
+    "description": "Reacción tóxica debido a medicamentos aplicados en el ojo.",
+    "code": "T495",
+    "category": "Envenenamiento"
+  },
+  {
+    "name": "Envenenamiento por drogas otorrinolaringológicas",
+    "description": "Toxicidad relacionada con medicamentos tópicos para oídos, nariz o garganta.",
+    "code": "T496",
+    "category": "Envenenamiento"
+  },
+  {
+    "name": "Envenenamiento por drogas dentales aplicadas tópicamente",
+    "description": "Reacción adversa grave a medicamentos dentales aplicados en la cavidad bucal.",
+    "code": "T497",
+    "category": "Envenenamiento"
+  },
+  {
+    "name": "Envenenamiento por otros agentes tópicos",
+    "description": "Reacción tóxica a otros tipos de sustancias aplicadas tópicamente.",
+    "code": "T498",
+    "category": "Envenenamiento"
+  },
+  {
+    "name": "Envenenamiento por agentes tópicos, no especificados",
+    "description": "Reacción tóxica a sustancias tópicas no especificadas.",
+    "code": "T499",
+    "category": "Envenenamiento"
+  },
+  {
+    "name": "Alergia no especificada",
+    "description": "Reacción alérgica que no ha sido especificada.",
+    "code": "T784",
+    "category": "Alergias"
+  },
+  {
+    "name": "Choque debido a anestesia",
+    "description": "Reacción de choque provocada por la administración de anestesia.",
+    "code": "T882",
+    "category": "Complicaciones médicas"
+  },
+  {
+    "name": "Hipertermia maligna debida a anestesia",
+    "description": "Reacción severa que causa hipertermia en respuesta a anestesia.",
+    "code": "T883",
+    "category": "Complicaciones médicas"
+  },
+  {
+    "name": "Otras complicaciones de la anestesia",
+    "description": "Complicaciones adicionales relacionadas con la administración de anestesia.",
+    "code": "T885",
+    "category": "Complicaciones médicas"
+  },
+  {
+    "name": "Choque anafiláctico debido a efecto adverso de droga o medicamento",
+    "description": "Reacción alérgica grave causada por la administración adecuada de un medicamento.",
+    "code": "T886",
+    "category": "Complicaciones médicas"
+  },
+  {
+    "name": "Efectos adversos de penicilinas",
+    "description": "Reacciones adversas asociadas con el uso de penicilinas.",
+    "code": "Y400",
+    "category": "Efectos adversos de medicamentos"
+  },
+  {
+    "name": "Efectos adversos de cefalosporinas y otros antibióticos betalactámicos",
+    "description": "Reacciones adversas derivadas del uso de antibióticos cefalosporínicos y betalactámicos.",
+    "code": "Y401",
+    "category": "Efectos adversos de medicamentos"
+  },
+  {
+    "name": "Efectos adversos de los macrólidos",
+    "description": "Reacciones adversas asociadas con el uso de antibióticos macrólidos.",
+    "code": "Y403",
+    "category": "Efectos adversos de medicamentos"
+  },
+  {
+    "name": "Efectos adversos de tetraciclinas",
+    "description": "Reacciones adversas relacionadas con el uso de antibióticos de la clase de las tetraciclinas.",
+    "code": "Y404",
+    "category": "Efectos adversos de medicamentos"
+  },
+  {
+    "name": "Efectos adversos de aminoglucósidos",
+    "description": "Reacciones adversas derivadas del uso de antibióticos aminoglucósidos.",
+    "code": "Y405",
+    "category": "Efectos adversos de medicamentos"
+  },
+  {
+    "name": "Efectos adversos de rifamicinas",
+    "description": "Reacciones adversas asociadas al uso de rifamicinas.",
+    "code": "Y406",
+    "category": "Efectos adversos de medicamentos"
+  },
+  {
+    "name": "Efectos adversos de antibióticos antimicóticos usados sistémicamente",
+    "description": "Reacciones adversas causadas por el uso sistémico de antibióticos antimicóticos.",
+    "code": "Y407",
+    "category": "Efectos adversos de medicamentos"
+  },
+  {
+    "name": "Efectos adversos de otros antibióticos sistémicos",
+    "description": "Reacciones adversas provocadas por el uso de antibióticos sistémicos no especificados.",
+    "code": "Y408",
+    "category": "Efectos adversos de medicamentos"
+  },
+  {
+    "name": "Efectos adversos de antibiótico sistémico no especificado",
+    "description": "Reacción adversa a un antibiótico sistémico que no ha sido especificado.",
+    "code": "Y409",
+    "category": "Efectos adversos de medicamentos"
+  },
+  {
+    "name": "Efectos adversos de sulfonamidas",
+    "description": "Reacciones adversas asociadas con el uso de sulfonamidas.",
+    "code": "Y410",
+    "category": "Efectos adversos de medicamentos"
+  },
+  {
+    "name": "Efectos adversos de drogas antimicobacterianas",
+    "description": "Reacciones adversas derivadas del uso de fármacos antimicobacterianos.",
+    "code": "Y411",
+    "category": "Efectos adversos de medicamentos"
+  },
+  {
+    "name": "Efectos adversos de otros analgésicos y antipiréticos",
+    "description": "Reacciones adversas provocadas por el uso de otros analgésicos y antipiréticos.",
+    "code": "Y458",
+    "category": "Efectos adversos de medicamentos"
+  },
+  {
+    "name": "Efectos adversos de drogas analgésicas, antipiréticas y antiinflamatorias no especificadas",
+    "description": "Reacción adversa a fármacos que no se han clasificado dentro de una categoría específica.",
+    "code": "Y459",
+    "category": "Efectos adversos de medicamentos"
+  },
+  {
+    "name": "Efectos adversos de gases anestésicos locales",
+    "description": "Reacciones adversas provocadas por gases anestésicos administrados localmente.",
+    "code": "Y483",
+    "category": "Efectos adversos de medicamentos"
+  },
+  {
+    "name": "Efectos adversos de anestésicos no especificados",
+    "description": "Reacción adversa a anestésicos cuya naturaleza no ha sido especificada.",
+    "code": "Y484",
+    "category": "Efectos adversos de medicamentos"
+  },
+  {
+    "name": "Secuelas de accidente de vehículo de motor",
+    "description": "Consecuencias prolongadas de un accidente que involucró un vehículo motorizado.",
+    "code": "Y850",
+    "category": "Secuelas"
+  },
+  {
+    "name": "Secuelas de otros accidentes de transporte y los no especificados",
+    "description": "Consecuencias de accidentes de transporte que no han sido especificados.",
+    "code": "Y859",
+    "category": "Secuelas"
+  },
+  {
+    "name": "Secuelas de otros accidentes",
+    "description": "Secuelas a largo plazo de accidentes generales no especificados.",
+    "code": "Y86",
+    "category": "Secuelas"
+  },
+  {
+    "name": "Secuelas de lesiones autoinfligidas",
+    "description": "Consecuencias a largo plazo de lesiones autoinfligidas.",
+    "code": "Y870",
+    "category": "Secuelas"
+  },
+  {
+    "name": "Secuelas de agresiones",
+    "description": "Efectos a largo plazo de agresiones físicas o violencia.",
+    "code": "Y871",
+    "category": "Secuelas"
+  },
+  {
+    "name": "Secuelas de eventos de intención no determinada",
+    "description": "Consecuencias prolongadas de eventos cuya intencionalidad no ha sido determinada.",
+    "code": "Y872",
+    "category": "Secuelas"
+  },
+  {
+    "name": "Secuelas de efectos adversos causados por drogas, medicamentos y sustancias biológicas en su uso terapéutico",
+    "description": "Consecuencias de largo plazo tras efectos adversos de drogas o medicamentos usados en terapias.",
+    "code": "Y880",
+    "category": "Secuelas"
+  },
+  {
+    "name": "Secuelas de incidentes ocurridos al paciente durante procedimientos médicos y quirúrgicos",
+    "description": "Efectos adversos prolongados ocurridos durante procedimientos médicos o quirúrgicos.",
+    "code": "Y881",
+    "category": "Secuelas"
+  },
+  {
+    "name": "Secuelas de incidentes adversos asociados con dispositivos médicos en uso diagnóstico y terapéutico",
+    "description": "Consecuencias de fallos o incidentes relacionados con el uso de dispositivos médicos.",
+    "code": "Y882",
+    "category": "Secuelas"
+  },
+  {
+    "name": "Secuelas de procedimientos médicos y quirúrgicos como la causa de reacción anormal del paciente o de complicación posterior",
+    "description": "Complicaciones tardías derivadas de procedimientos médicos o quirúrgicos.",
+    "code": "Y883",
+    "category": "Secuelas"
+  },
+  {
+    "name": "Secuelas de intervención legal",
+    "description": "Consecuencias a largo plazo derivadas de intervenciones legales.",
+    "code": "Y890",
+    "category": "Secuelas"
+  },
+  {
+    "name": "Secuelas de operaciones de guerra",
+    "description": "Efectos adversos y secuelas a largo plazo de operaciones militares.",
+    "code": "Y891",
+    "category": "Secuelas"
+  },
+  {
+    "name": "Secuelas de causa externa no especificada",
+    "description": "Secuelas prolongadas de incidentes cuya causa no ha sido determinada o especificada.",
+    "code": "Y899",
+    "category": "Secuelas"
+  }
+]
+
+

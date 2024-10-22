@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">OdontoCode</string>
+    <string name="default_web_client_id">219128974017-nhk25053gaaeb3p74018tet2tttnts2n.apps.googleusercontent.com</string>
+    <string name="title_activity_main2">MainActivity2</string>
+    <string name="title_activity_favorites">FavoritesActivity</string>
+
+</resources>

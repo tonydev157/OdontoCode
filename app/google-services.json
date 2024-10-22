@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "219128974017",
+    "project_id": "proyectospersonales-1c515",
+    "storage_bucket": "proyectospersonales-1c515.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:219128974017:android:b63da2b92b73618c16a240",
+        "android_client_info": {
+          "package_name": "com.tonymen.odontocode"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "219128974017-nhk25053gaaeb3p74018tet2tttnts2n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tonymen.odontocode",
+            "certificate_hash": "249105f8ab19cd2cc0dc1326e13a04dd1334d99a"
+          }
+        },
+        {
+          "client_id": "219128974017-lhkohps6e1so0spcko3p5tuunq5ltve4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCfpgoJWEQ7PF1hWCSQLT4uEHWETgpDhgU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "219128974017-lhkohps6e1so0spcko3p5tuunq5ltve4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
