@@ -13,9 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -27,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.filled.Note
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
@@ -40,13 +37,10 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.gson.Gson
 import com.tonymen.odontocode.R
-import com.tonymen.odontocode.data.Area
-import com.tonymen.odontocode.data.Favorite
-import com.tonymen.odontocode.data.User
-import com.tonymen.odontocode.data.UserType
-import com.tonymen.odontocode.data.Procedure
+import com.tonymen.odontocode.data.*
 import com.tonymen.odontocode.ui.theme.OdontoCodeTheme
 import com.tonymen.odontocode.viewmodel.MainViewModel
+import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
@@ -81,6 +75,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // Función para cargar el JSON de los assets
     private fun readJsonFromAssets(fileName: String): String? {
         return try {
             val inputStream = assets.open(fileName)
@@ -139,14 +134,18 @@ class MainActivity : ComponentActivity() {
     }
 
     // Filtrar procedimientos según los diferentes criterios
-    fun filterProcedureList(query: String, procedureList: List<Procedure>, searchByCode: Boolean): List<Procedure> {
+    fun filterProcedureList(
+        query: String,
+        procedureList: List<Procedure>,
+        searchOption: String
+    ): List<Procedure> {
         return procedureList.filter { procedure ->
-            if (searchByCode) {
-                procedure.cie10procedure.contains(query, ignoreCase = true) ||
-                        procedure.diagnosis.contains(query, ignoreCase = true) ||
-                        procedure.cie10diagnosis.contains(query, ignoreCase = true)
-            } else {
-                procedure.procedure.contains(query, ignoreCase = true)
+            when (searchOption) {
+                "Procedimiento" -> procedure.procedure.contains(query, ignoreCase = true)
+                "CIE-10 Procedimiento" -> procedure.cie10procedure.contains(query, ignoreCase = true)
+                "Diagnóstico" -> procedure.diagnosis.contains(query, ignoreCase = true)
+                "CIE-10 Diagnóstico" -> procedure.cie10diagnosis.contains(query, ignoreCase = true)
+                else -> false
             }
         }
     }
@@ -157,7 +156,7 @@ class MainActivity : ComponentActivity() {
     fun SearchScreen(firestore: FirebaseFirestore, isAdmin: Boolean, onLogoutClick: () -> Unit) {
         var query by remember { mutableStateOf("") }
         var selectedProcedure by remember { mutableStateOf<Procedure?>(null) }
-        var searchByCode by remember { mutableStateOf(true) }
+        var searchOption by remember { mutableStateOf("Procedimiento") }
         var areaList by remember { mutableStateOf<List<Area>>(emptyList()) }
         var odontopediatriaList by remember { mutableStateOf<List<Area>>(emptyList()) }
         var expandedAreas by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -179,6 +178,10 @@ class MainActivity : ComponentActivity() {
 
             fetchAreasOdontopediatria(firestore) { fetchedOdontopediatria ->
                 odontopediatriaList = fetchedOdontopediatria.sortedBy { it.name }
+            }
+            fetchProcedures(firestore) { fetchedProcedures ->
+                allProcedureList = fetchedProcedures
+                searchResults = filterProcedureList(query, allProcedureList, searchOption)
             }
         }
 
@@ -247,7 +250,7 @@ class MainActivity : ComponentActivity() {
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
             ) {
-                // Opciones para seleccionar el método de búsqueda
+                // Barra desplegable para seleccionar el tipo de búsqueda
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -255,46 +258,52 @@ class MainActivity : ComponentActivity() {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text("Search by: ", style = MaterialTheme.typography.titleMedium)
-                    Row {
-                        Text("Code", style = MaterialTheme.typography.bodyLarge)
-                        RadioButton(
-                            selected = searchByCode,
-                            onClick = {
-                                searchByCode = true
-                                selectedProcedure = null
-                            },
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text("Name", style = MaterialTheme.typography.bodyLarge)
-                        RadioButton(
-                            selected = !searchByCode,
-                            onClick = {
-                                searchByCode = false
-                                selectedProcedure = null
-                            },
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
+
+                    // Dropdown de selección
+                    var expanded by remember { mutableStateOf(false) }
+                    Box {
+                        Button(onClick = { expanded = true }) {
+                            Text(searchOption)
+                        }
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            DropdownMenuItem(onClick = {
+                                searchOption = "Procedimiento"
+                                expanded = false
+                            }, text = { Text("Procedimiento") })
+                            DropdownMenuItem(onClick = {
+                                searchOption = "CIE-10 Procedimiento"
+                                expanded = false
+                            }, text = { Text("CIE-10 Procedimiento") })
+                            DropdownMenuItem(onClick = {
+                                searchOption = "Diagnóstico"
+                                expanded = false
+                            }, text = { Text("Diagnóstico") })
+                            DropdownMenuItem(onClick = {
+                                searchOption = "CIE-10 Diagnóstico"
+                                expanded = false
+                            }, text = { Text("CIE-10 Diagnóstico") })
+                        }
                     }
                 }
 
-                // Buscador de procedimientos por código o nombre con lista desplegable
+                // Buscador de procedimientos con lista desplegable
                 SearchBarWithDropdown(
                     query = query,
                     searchResults = searchResults,
-                    onQueryChange = { newQuery -> query = newQuery },
+                    onQueryChange = { newQuery ->
+                        query = newQuery
+                        searchResults = filterProcedureList(query, allProcedureList, searchOption)
+                    },
                     onSearch = {
                         if (query.isNotBlank()) {
-                            searchResults = filterProcedureList(query, allProcedureList, searchByCode)
+                            searchResults = filterProcedureList(query, allProcedureList, searchOption)
                             isDropdownExpanded = searchResults.isNotEmpty()
                             selectedProcedure = null
                         } else {
                             searchResults = emptyList()
-                            selectedProcedure = null
                             isDropdownExpanded = false
                         }
                     },
@@ -307,6 +316,7 @@ class MainActivity : ComponentActivity() {
                     focusRequester = focusRequester,
                     keyboardController = keyboardController
                 )
+
                 // Mostrar el procedimiento seleccionado si hay uno
                 selectedProcedure?.let { procedure ->
                     ProcedureDetail(mainViewModel, firestore, procedure) {
@@ -398,7 +408,23 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    // Función para cargar procedimientos
+    private fun fetchProcedures(firestore: FirebaseFirestore, onResult: (List<Procedure>) -> Unit) {
+        firestore.collection("procedures")
+            .get()
+            .addOnSuccessListener { documents ->
+                val procedureList = documents.map { it.toObject(Procedure::class.java) }
+                onResult(procedureList)
+            }
+            .addOnFailureListener {
+                onResult(emptyList())
+            }
+    }
 }
+
+
+
 
 // Componente de barra de búsqueda con menú desplegable
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
