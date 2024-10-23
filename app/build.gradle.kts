@@ -94,6 +94,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.foundation.android)
+    implementation(libs.androidx.runner)
+    implementation(libs.androidx.espresso.core)
 
     // Testing dependencies
     testImplementation(libs.junit)

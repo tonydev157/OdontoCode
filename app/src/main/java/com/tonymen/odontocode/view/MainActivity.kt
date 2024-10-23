@@ -784,3 +784,4 @@ fun fetchAreasOdontopediatria(firestore: FirebaseFirestore, onResult: (List<Area
             onResult(emptyList()) // Si falla, devolver una lista vacía
         }
 }
+
