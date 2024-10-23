@@ -19,6 +19,7 @@ firebaseFirestoreKtxVersion = "23.0.3"
 firebaseStorageKtx = "21.0.0"
 foundation = "1.7.1"
 glide = "4.12.0"
+googleFirebaseFirestoreKtxVersion = "24.1.0"
 gson = "2.10.1"
 kotlin = "1.9.0"
 coreKtx = "1.13.1"
@@ -87,6 +88,7 @@ firebase-bom-v3200 = { module = "com.google.firebase:firebase-bom", version.ref 
 firebase-firestore = { module = "com.google.firebase:firebase-firestore", version.ref = "firebaseFirestore" }
 firebase-firestore-ktx = { module = "com.google.firebase:firebase-firestore-ktx", version.ref = "firebaseFirestoreKtx" }
 firebase-firestore-ktx-v2303 = { module = "com.google.firebase:firebase-firestore-ktx", version.ref = "firebaseFirestoreKtxVersion" }
+firebase-firestore-ktx-v2410 = { module = "com.google.firebase:firebase-firestore-ktx", version.ref = "googleFirebaseFirestoreKtxVersion" }
 firebase-storage-ktx = { module = "com.google.firebase:firebase-storage-ktx", version.ref = "firebaseStorageKtx" }
 glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
 google-firebase-analytics = { module = "com.google.firebase:firebase-analytics", version.ref = "firebaseAnalytics" }

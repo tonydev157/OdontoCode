@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -17,11 +18,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.tonymen.odontocode.R
-import com.tonymen.odontocode.data.Diagnosis
+import com.tonymen.odontocode.data.Favorite
+import com.tonymen.odontocode.data.Procedure
 import com.tonymen.odontocode.ui.theme.OdontoCodeTheme
 
 class FavoritesActivity : ComponentActivity() {
@@ -42,24 +45,27 @@ class FavoritesActivity : ComponentActivity() {
                     Log.d("FavoritesActivity", "Usuario autenticado con ID: $userId")
                 }
 
-                var favoriteDiagnoses by remember { mutableStateOf<List<Diagnosis>>(emptyList()) }
+                var favoriteProcedures by remember { mutableStateOf<List<Procedure>>(emptyList()) }
                 var query by remember { mutableStateOf("") }
-                var filteredDiagnoses by remember { mutableStateOf<List<Diagnosis>>(emptyList()) }
+                var filteredFavorites by remember { mutableStateOf<List<Procedure>>(emptyList()) }
 
                 // Cargar favoritos desde Firestore
                 LaunchedEffect(Unit) {
                     fetchUserFavorites(userId) { favorites ->
-                        favoriteDiagnoses = favorites
-                        filteredDiagnoses = favorites
+                        favoriteProcedures = favorites
+                        filteredFavorites = favorites
                     }
                 }
 
                 // Buscar y filtrar favoritos
                 fun onSearch(query: String) {
-                    filteredDiagnoses = if (query.isBlank()) {
-                        favoriteDiagnoses
+                    filteredFavorites = if (query.isBlank()) {
+                        favoriteProcedures
                     } else {
-                        favoriteDiagnoses.filter { it.code.contains(query, ignoreCase = true) || it.name.contains(query, ignoreCase = true) }
+                        favoriteProcedures.filter {
+                            it.cie10procedure.contains(query, ignoreCase = true) ||
+                                    it.procedure.contains(query, ignoreCase = true)
+                        }
                     }
                 }
 
@@ -100,8 +106,8 @@ class FavoritesActivity : ComponentActivity() {
                                 containerColor = MaterialTheme.colorScheme.surface,
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                                 unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                                focusedTextColor = MaterialTheme.colorScheme.onSurface,  // Controla el color del texto cuando el campo está enfocado
-                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)  // Controla el color del texto cuando no está enfocado
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                             )
                         )
 
@@ -110,8 +116,8 @@ class FavoritesActivity : ComponentActivity() {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(filteredDiagnoses) { diagnosis ->
-                                FavoriteDiagnosisItem(diagnosis, userId, firestore)
+                            items(filteredFavorites) { favorite ->
+                                FavoriteProcedureItem(favorite, userId, firestore)
                             }
                         }
                     }
@@ -120,95 +126,112 @@ class FavoritesActivity : ComponentActivity() {
         }
     }
 
-    // Función para cargar los diagnósticos favoritos del usuario
-    private fun fetchUserFavorites(userId: String, onResult: (List<Diagnosis>) -> Unit) {
-        firestore.collection("userFavorites")
-            .document(userId)
-            .collection("diagnoses")  // Subcolección de diagnósticos favoritos
-            .get()
-            .addOnSuccessListener { documents ->
-                if (documents.isEmpty) {
-                    Log.d("FavoritesActivity", "No se encontraron favoritos para el usuario: $userId")
-                } else {
-                    Log.d("FavoritesActivity", "Favoritos encontrados: ${documents.size()}")
-                }
+    // Función para cargar los procedimientos favoritos del usuario
+    private fun fetchUserFavorites(userId: String, onResult: (List<Procedure>) -> Unit) {
+        val userFavoritesRef = firestore.collection("userFavorites").document(userId)
 
-                val favorites = documents.map { it.toObject(Diagnosis::class.java) }
-                onResult(favorites)
+        userFavoritesRef.get()
+            .addOnSuccessListener { document ->
+                if (document.exists()) {
+                    val favorite = document.toObject(Favorite::class.java)
+                    val procedureIds = favorite?.procedureIds ?: emptyList()
+
+                    if (procedureIds.isNotEmpty()) {
+                        // Obtener los detalles de los procedimientos favoritos
+                        firestore.collection("procedures")
+                            .whereIn("id", procedureIds)
+                            .get()
+                            .addOnSuccessListener { procedureDocs ->
+                                val procedures = procedureDocs.map { it.toObject(Procedure::class.java) }
+                                onResult(procedures)
+                            }
+                            .addOnFailureListener { e ->
+                                Log.e("FavoritesActivity", "Error al cargar procedimientos favoritos", e)
+                                onResult(emptyList())
+                            }
+                    } else {
+                        Log.d("FavoritesActivity", "No hay procedimientos favoritos para este usuario.")
+                        onResult(emptyList())
+                    }
+                } else {
+                    Log.d("FavoritesActivity", "El documento de favoritos no existe para este usuario.")
+                    onResult(emptyList())
+                }
             }
             .addOnFailureListener { e ->
                 Log.e("FavoritesActivity", "Error al cargar favoritos", e)
                 onResult(emptyList())
             }
     }
-
 }
 
 @Composable
-fun FavoriteDiagnosisItem(diagnosis: Diagnosis, userId: String, firestore: FirebaseFirestore) {
-    var isFavorite by remember { mutableStateOf(false) }
-
-    // Verificar si es favorito al cargar la vista
-    LaunchedEffect(diagnosis.id) {
-        val favoriteRef = firestore.collection("userFavorites")
-            .document(userId)
-            .collection("diagnoses")
-            .document(diagnosis.id)
-
-        favoriteRef.get()
-            .addOnSuccessListener { document ->
-                isFavorite = document.exists() // Si el documento existe, es favorito
-            }
-    }
+fun FavoriteProcedureItem(favorite: Procedure, userId: String, firestore: FirebaseFirestore) {
+    var isFavorite by remember { mutableStateOf(true) }  // Ya que es un favorito, iniciamos como true
 
     // Función para actualizar el estado de favoritos en Firestore
     fun toggleFavorite() {
         val favoriteRef = firestore.collection("userFavorites")
             .document(userId)
-            .collection("diagnoses")
-            .document(diagnosis.id)
 
-        if (isFavorite) {
-            // Eliminar de favoritos en Firestore
-            favoriteRef.delete()
-                .addOnSuccessListener {
-                    isFavorite = false
-                    Log.d("FavoriteDiagnosisItem", "Eliminado de favoritos: ${diagnosis.id}")
+        favoriteRef.get().addOnSuccessListener { document ->
+            if (document.exists()) {
+                val currentFavorites = document.toObject(Favorite::class.java)
+                val updatedFavorites = currentFavorites?.procedureIds?.toMutableList() ?: mutableListOf()
+
+                if (isFavorite) {
+                    updatedFavorites.remove(favorite.id)
+                } else {
+                    updatedFavorites.add(favorite.id)
                 }
-                .addOnFailureListener { e -> Log.e("FavoriteDiagnosisItem", "Error al eliminar: ", e) }
-        } else {
-            // Añadir a favoritos en Firestore
-            val favorite = mapOf(
-                "id" to diagnosis.id,
-                "name" to diagnosis.name,
-                "description" to diagnosis.description,
-                "category" to diagnosis.category,
-                "code" to diagnosis.code
-            )
-            favoriteRef.set(favorite)
-                .addOnSuccessListener {
-                    isFavorite = true
-                    Log.d("FavoriteDiagnosisItem", "Añadido a favoritos: ${diagnosis.id}")
-                }
-                .addOnFailureListener { e -> Log.e("FavoriteDiagnosisItem", "Error al añadir: ", e) }
+
+                favoriteRef.update("procedureIds", updatedFavorites)
+                    .addOnSuccessListener {
+                        isFavorite = !isFavorite
+                        Log.d("FavoriteProcedureItem", "Favorito actualizado")
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("FavoriteProcedureItem", "Error al actualizar favorito", e)
+                    }
+            }
         }
     }
 
-    // Diseño del elemento de la lista de favoritos
-    Card(
+    // Si algunos campos están vacíos, se mostrará un texto de "Datos no disponibles"
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
-        elevation = CardDefaults.cardElevation(4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        )
+        shape = RoundedCornerShape(12.dp),
+        tonalElevation = 4.dp
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = "Código: ${diagnosis.code}", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
-            Text(text = "Nombre: ${diagnosis.name}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-            Text(text = "Descripción: ${diagnosis.description}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Código: ${favorite.cie10procedure.ifBlank { "Datos no disponibles" }}",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Divider()
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Nombre: ${favorite.procedure.ifBlank { "Datos no disponibles" }}",
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
+            )
+            Text(
+                text = "Diagnóstico: ${favorite.diagnosis.ifBlank { "Datos no disponibles" }}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                text = "CIE-10 Diagnóstico: ${favorite.cie10diagnosis.ifBlank { "Datos no disponibles" }}",
+                style = MaterialTheme.typography.bodyMedium
+            )
 
             // Icono de corazón para marcar/desmarcar como favorito
             IconButton(

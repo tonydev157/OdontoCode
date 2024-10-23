@@ -1,5 +1,4 @@
-{
-    "areas": [
+[
         {
             "name": "Prótesis Removible"
         },
@@ -36,5 +35,4 @@
         {
             "name": "Exodoncia"
         }
-    ]
-}
+]

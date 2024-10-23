@@ -104,4 +104,6 @@ dependencies {
 
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    implementation (libs.firebase.firestore.ktx.v2410)
+
 }
