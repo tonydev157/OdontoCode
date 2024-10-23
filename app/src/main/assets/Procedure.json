@@ -1,0 +1,457 @@
+[
+    {
+        Procedimiento Tallado de apoyo para metal,
+        CIE 10 de Procedimiento D6072,
+        Diagnóstico Edentula parcial,
+        CIE 10 de Diagnóstico K08.1,
+        Área Prótesis removible
+    },
+    {
+        Procedimiento Tallado de apoyo para metal porcelana,
+        CIE 10 de Procedimiento D6069,
+        Diagnóstico Edentula parcial,
+        CIE 10 de Diagnóstico K08.1,
+        Área Prótesis removible
+    },
+    {
+        Procedimiento Provisional removible superior,
+        CIE 10 de Procedimiento D5820,
+        Diagnóstico Edentula parcial,
+        CIE 10 de Diagnóstico K08.1,
+        Área Prótesis removible
+    },
+    {
+        Procedimiento Provisional removible inferior,
+        CIE 10 de Procedimiento D5821,
+        Diagnóstico Edentula parcial,
+        CIE 10 de Diagnóstico K08.1,
+        Área Prótesis removible
+    },
+    {
+        Procedimiento Removible superior definitiva,
+        CIE 10 de Procedimiento D5211,
+        Diagnóstico Edentula parcial,
+        CIE 10 de Diagnóstico K08.1,
+        Área Prótesis removible
+    },
+    {
+        Procedimiento Removible inferior definitiva,
+        CIE 10 de Procedimiento D5212,
+        Diagnóstico Edentula parcial,
+        CIE 10 de Diagnóstico K08.1,
+        Área Prótesis removible
+    },
+    {
+        Procedimiento Ajuste oclusal y controles,
+        CIE 10 de Procedimiento D9940,
+        Diagnóstico Edentula parcial,
+        CIE 10 de Diagnóstico K08.1,
+        Área Prótesis removible
+    },
+    {
+        Procedimiento Prótesis definitiva superior,
+        CIE 10 de Procedimiento D5110,
+        Diagnóstico Edentula total,
+        CIE 10 de Diagnóstico K06.9,
+        Área Prótesis total
+    },
+    {
+        Procedimiento Prótesis definitiva inferior,
+        CIE 10 de Procedimiento D5120,
+        Diagnóstico Edentula total,
+        CIE 10 de Diagnóstico K06.9,
+        Área Prótesis total
+    },
+    {
+        Procedimiento Prótesis provisional superior,
+        CIE 10 de Procedimiento D5810,
+        Diagnóstico Edentula total,
+        CIE 10 de Diagnóstico K06.9,
+        Área Prótesis total
+    },
+    {
+        Procedimiento Prótesis provisional inferior,
+        CIE 10 de Procedimiento D5811,
+        Diagnóstico Edentula total,
+        CIE 10 de Diagnóstico K06.9,
+        Área Prótesis total
+    },
+    {
+        Procedimiento Prótesis inmediata superior,
+        CIE 10 de Procedimiento D5130,
+        Diagnóstico Edentula total,
+        CIE 10 de Diagnóstico K06.9,
+        Área Prótesis total
+    },
+    {
+        Procedimiento Prótesis inmediata inferior,
+        CIE 10 de Procedimiento D5140,
+        Diagnóstico Edentula total,
+        CIE 10 de Diagnóstico K06.9,
+        Área Prótesis total
+    },
+    {
+        Procedimiento Ajustes y controles posteriores prótesis superior,
+        CIE 10 de Procedimiento D5410,
+        Diagnóstico Edentula total,
+        CIE 10 de Diagnóstico K06.9,
+        Área Prótesis total
+    },
+    {
+        Procedimiento Ajustes y controles posteriores prótesis inferior,
+        CIE 10 de Procedimiento D5411,
+        Diagnóstico Edentula total,
+        CIE 10 de Diagnóstico K06.9,
+        Área Prótesis total
+    },
+    {
+        Procedimiento Provisional,
+        CIE 10 de Procedimiento D2999,
+        Diagnóstico Caries de dentina,
+        CIE 10 de Diagnóstico K02.1,
+        Área Prótesis fija
+    },
+    {
+        Procedimiento Inlay,
+        CIE 10 de Procedimiento D2650,
+        Diagnóstico Caries de dentina,
+        CIE 10 de Diagnóstico K02.1,
+        Área Prótesis fija
+    },
+    {
+        Procedimiento Onlay,
+        CIE 10 de Procedimiento D2662,
+        Diagnóstico Caries de dentina,
+        CIE 10 de Diagnóstico K02.1,
+        Área Prótesis fija
+    },
+    {
+        Procedimiento Overlay,
+        CIE 10 de Procedimiento D2664,
+        Diagnóstico Caries de dentina,
+        CIE 10 de Diagnóstico K02.1,
+        Área Prótesis fija
+    },
+    {
+        Procedimiento Preparación pilar para porcelana pura,
+        CIE 10 de Procedimiento D6058,
+        Diagnóstico Caries de dentina,
+        CIE 10 de Diagnóstico K02.1,
+        Área Prótesis fija
+    },
+    {
+        Procedimiento Preparación pilar para metal porcelana,
+        CIE 10 de Procedimiento D6059,
+        Diagnóstico Caries de dentina,
+        CIE 10 de Diagnóstico K02.1,
+        Área Prótesis fija
+    },
+    {
+        Procedimiento Provisional,
+        CIE 10 de Procedimiento D2999,
+        Diagnóstico Caries de dentina,
+        CIE 10 de Diagnóstico K02.1,
+        Área Prótesis fija
+    },
+    {
+        Procedimiento Porcelana pura,
+        CIE 10 de Procedimiento D6740,
+        Diagnóstico Caries de dentina,
+        CIE 10 de Diagnóstico K02.1,
+        Área Prótesis fija
+    },
+    {
+        Procedimiento Metal porcelana,
+        CIE 10 de Procedimiento D6750,
+        Diagnóstico Caries de dentina,
+        CIE 10 de Diagnóstico K02.1,
+        Área Prótesis fija
+    },
+    {
+        Procedimiento Perno colado,
+        CIE 10 de Procedimiento D6545,
+        Diagnóstico Edentulo parcial,
+        CIE 10 de Diagnóstico K08.1,
+        Área Prótesis fija
+    },
+    {
+        Procedimiento Perno de fibra,
+        CIE 10 de Procedimiento D6548,
+        Diagnóstico Edentulo parcial,
+        CIE 10 de Diagnóstico K08.1,
+        Área Prótesis fija
+    },
+    {
+        Procedimiento Preparación para porcelana pura,
+        CIE 10 de Procedimiento D6058,
+        Diagnóstico Edentulo parcial,
+        CIE 10 de Diagnóstico K08.1,
+        Área Prótesis fija
+    },
+    {
+        Procedimiento Preparación para metal porcelana,
+        CIE 10 de Procedimiento D6059,
+        Diagnóstico Edentulo parcial,
+        CIE 10 de Diagnóstico K08.1,
+        Área Prótesis fija
+    },
+    {
+        Procedimiento Provisional,
+        CIE 10 de Procedimiento D6253,
+        Diagnóstico Edentulo parcial,
+        CIE 10 de Diagnóstico K08.1,
+        Área Prótesis fija
+    },
+    {
+        Procedimiento Puente porcelana pura,
+        CIE 10 de Procedimiento D6245,
+        Diagnóstico Edentulo parcial,
+        CIE 10 de Diagnóstico K08.1,
+        Área Prótesis fija
+    },
+    {
+        Procedimiento Puente metal porcelana,
+        CIE 10 de Procedimiento D6240,
+        Diagnóstico Edentulo parcial,
+        CIE 10 de Diagnóstico K08.1,
+        Área Prótesis fija
+    },
+    {
+        Procedimiento Examen odontológico,
+        CIE 10 de Procedimiento D0100,
+        Diagnóstico Examen odontológico,
+        CIE 10 de Diagnóstico Z01.2,
+        Área Apertura historia clínica
+    },
+    {
+        Procedimiento Rx panorámica,
+        CIE 10 de Procedimiento D0330,
+        Diagnóstico Examen odontológico,
+        CIE 10 de Diagnóstico Z01.2,
+        Área Apertura historia clínica
+    },
+    {
+        Procedimiento Rx periapical,
+        CIE 10 de Procedimiento D0220,
+        Diagnóstico Examen odontológico,
+        CIE 10 de Diagnóstico Z01.2,
+        Área Apertura historia clínica
+    },
+    {
+        Procedimiento Profilaxis adultos,
+        CIE 10 de Procedimiento D1110,
+        Diagnóstico Depositos de placa y acereciones,
+        CIE 10 de Diagnóstico K03.6,
+        Área Profilaxis
+    },
+    {
+        Procedimiento Fluorización niños,
+        CIE 10 de Procedimiento D1202,
+        Diagnóstico Depositos de placa y acereciones,
+        CIE 10 de Diagnóstico K03.6,
+        Área Profilaxis
+    },
+    {
+        Procedimiento Blanqueamiento por arco,
+        CIE 10 de Procedimiento D9972,
+        Diagnóstico Cambios de color exógeno,
+        CIE 10 de Diagnóstico K03.7,
+        Área Blanqueamiento
+    },
+    {
+        Procedimiento Resina simple anterior,
+        CIE 10 de Procedimiento D2330,
+        Diagnóstico Caries de esmalte,
+        CIE 10 de Diagnóstico K02.0,
+        Área Restauración
+    },
+    {
+        Procedimiento Resina compuesta anterior,
+        CIE 10 de Procedimiento D2331,
+        Diagnóstico Caries de esmalte,
+        CIE 10 de Diagnóstico K02.0,
+        Área Restauración
+    },
+    {
+        Procedimiento Resina compleja anterior,
+        CIE 10 de Procedimiento D2332,
+        Diagnóstico Caries de esmalte,
+        CIE 10 de Diagnóstico K02.0,
+        Área Restauración
+    },
+    {
+        Procedimiento Resina simple posterior,
+        CIE 10 de Procedimiento D2391,
+        Diagnóstico Caries de esmalte,
+        CIE 10 de Diagnóstico K02.0,
+        Área Restauración
+    },
+    {
+        Procedimiento Resina compuesta posterior,
+        CIE 10 de Procedimiento D2392,
+        Diagnóstico Caries de esmalte,
+        CIE 10 de Diagnóstico K02.0,
+        Área Restauración
+    },
+    {
+        Procedimiento Resina simple posterior,
+        CIE 10 de Procedimiento D2393,
+        Diagnóstico Caries de esmalte,
+        CIE 10 de Diagnóstico K02.0,
+        Área Restauración
+    },
+    {
+        Procedimiento Alargamiento de corona,
+        CIE 10 de Procedimiento D4249,
+        Diagnóstico Atrición,
+        CIE 10 de Diagnóstico K03.0,
+        Área Restauración
+    },
+    {
+        Procedimiento Ionómero,
+        CIE 10 de Procedimiento D2340,
+        Diagnóstico Caries de esmalte,
+        CIE 10 de Diagnóstico K02.0,
+        Área Operatoria
+    },
+    {
+        Procedimiento Coronas de resina,
+        CIE 10 de Procedimiento D6710,
+        Diagnóstico Caries de dentina,
+        CIE 10 de Diagnóstico K02.1,
+        Área Operatoria
+    },
+    {
+        Procedimiento Resina simple anterior,
+        CIE 10 de Procedimiento D2330,
+        Diagnóstico Caries de dentina,
+        CIE 10 de Diagnóstico K02.1,
+        Área Operatoria
+    },
+    {
+        Procedimiento Resina compuesta anterior,
+        CIE 10 de Procedimiento D2331,
+        Diagnóstico Caries de dentina,
+        CIE 10 de Diagnóstico K02.1,
+        Área Operatoria
+    },
+    {
+        Procedimiento Resina compleja anterior,
+        CIE 10 de Procedimiento D2332,
+        Diagnóstico Caries de dentina,
+        CIE 10 de Diagnóstico K02.1,
+        Área Operatoria
+    },
+    {
+        Procedimiento Resina simple posterior,
+        CIE 10 de Procedimiento D2391,
+        Diagnóstico Caries de dentina,
+        CIE 10 de Diagnóstico K02.1,
+        Área Operatoria
+    },
+    {
+        Procedimiento Resina compuesta posterior,
+        CIE 10 de Procedimiento D2392,
+        Diagnóstico Caries de dentina,
+        CIE 10 de Diagnóstico K02.1,
+        Área Operatoria
+    },
+    {
+        Procedimiento Resina compleja posterior,
+        CIE 10 de Procedimiento D2393,
+        Diagnóstico Caries de dentina,
+        CIE 10 de Diagnóstico K02.1,
+        Área Operatoria
+    },
+    {
+        Procedimiento Pulpotomía,
+        CIE 10 de Procedimiento D3220,
+        Diagnóstico Pulpitis irreversible,
+        CIE 10 de Diagnóstico K04.0,
+        Área Endodoncia
+    },
+    {
+        Procedimiento Pulpectomía,
+        CIE 10 de Procedimiento D3221,
+        Diagnóstico Necrosis,
+        CIE 10 de Diagnóstico K04.1,
+        Área Endodoncia
+    },
+    {
+        Procedimiento Endodoncia anterior,
+        CIE 10 de Procedimiento D3310,
+        Diagnóstico Absceso periapical con fístula,
+        CIE 10 de Diagnóstico K04.6,
+        Área Endodoncia
+    },
+    {
+        Procedimiento Endodoncia premolar,
+        CIE 10 de Procedimiento D3320,
+        Diagnóstico Absceso periapical sin fístula,
+        CIE 10 de Diagnóstico K04.7,
+        Área Endodoncia
+    },
+    {
+        Procedimiento Endodoncia molar,
+        CIE 10 de Procedimiento D3330,
+        Diagnóstico Absceso Fénix,
+        CIE 10 de Diagnóstico K04.5,
+        Área Endodoncia
+    },
+    {
+        Procedimiento Raspado y alisado radicular,
+        CIE 10 de Procedimiento D4341,
+        Diagnóstico Gingivitis aguda,
+        CIE 10 de Diagnóstico K05.0,
+        Área Periodoncia
+    },
+    {
+        Procedimiento Reevaluación periodontal,
+        CIE 10 de Procedimiento D4910,
+        Diagnóstico Gingivitis crónica,
+        CIE 10 de Diagnóstico K05.1,
+        Área Periodoncia
+    },
+    {
+        Procedimiento Profilaxis de niños,
+        CIE 10 de Procedimiento D1120,
+        Diagnóstico Deposito de placa,
+        CIE 10 de Diagnóstico K03.6,
+        Área Odontopediatría
+    },
+    {
+        Procedimiento Fluorización niños,
+        CIE 10 de Procedimiento D1203,
+        Diagnóstico Deposito de placa,
+        CIE 10 de Diagnóstico K03.6,
+        Área Odontopediatría
+    },
+    {
+        Procedimiento Sellantes,
+        CIE 10 de Procedimiento D1351,
+        Diagnóstico Surcos profundos,
+        CIE 10 de Diagnóstico NA,
+        Área Odontopediatría
+    },
+    {
+        Procedimiento Exodoncia simple,
+        CIE 10 de Procedimiento D7140,
+        Diagnóstico Persistencia caduca,
+        CIE 10 de Diagnóstico NA,
+        Área Exodoncia
+    },
+    {
+        Procedimiento Exodoncia compleja,
+        CIE 10 de Procedimiento D7141,
+        Diagnóstico Persistencia caduca,
+        CIE 10 de Diagnóstico NA,
+        Área Exodoncia
+    },
+    {
+        Procedimiento Mantenedor de espacio,
+        CIE 10 de Procedimiento D7141,
+        Diagnóstico Persistencia caduca,
+        CIE 10 de Diagnóstico NA,
+        Área Exodoncia
+    }
+]

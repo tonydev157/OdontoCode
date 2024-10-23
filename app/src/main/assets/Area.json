@@ -1,0 +1,40 @@
+{
+    "areas": [
+        {
+            "name": "Prótesis Removible"
+        },
+        {
+            "name": "Prótesis Total"
+        },
+        {
+            "name": "Prótesis Fija"
+        },
+        {
+            "name": "Apertura Historia Clínica"
+        },
+        {
+            "name": "Profilaxis"
+        },
+        {
+            "name": "Blanqueamiento"
+        },
+        {
+            "name": "Operatoria Dental"
+        },
+        {
+            "name": "Endodoncia"
+        },
+        {
+            "name": "Periodoncia"
+        },
+        {
+            "name": "Odontopediatría"
+        },
+        {
+            "name": "Prevención"
+        },
+        {
+            "name": "Exodoncia"
+        }
+    ]
+}
