@@ -2,10 +2,14 @@ package com.tonymen.odontocode.view
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -49,6 +53,10 @@ class MainActivity : ComponentActivity() {
     private var isAdmin by mutableStateOf(false)
     private val mainViewModel: MainViewModel by viewModels()
 
+    private var expandedAreas by mutableStateOf<List<String>>(emptyList()) // Control de áreas abiertas
+    private var selectedProcedure by mutableStateOf<Procedure?>(null) // Control del procedimiento seleccionado
+    private var backPressedOnce = false // Control para doble toque en "Atrás"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -73,6 +81,53 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onBackPressed() {
+        when {
+            selectedProcedure != null -> {
+                // Si hay un procedimiento seleccionado, deseleccionarlo
+                selectedProcedure = null
+            }
+            expandedAreas.isNotEmpty() -> {
+                // Si hay áreas expandidas, colapsarlas
+                expandedAreas = emptyList()
+            }
+            backPressedOnce -> {
+                // Si ya se presionó "Atrás" una vez, salir de la aplicación
+                super.onBackPressed()
+                return
+            }
+            else -> {
+                // Primer toque en "Atrás" sin áreas ni procedimientos, mostrar aviso
+                backPressedOnce = true
+                showExitToast()
+                resetBackPressedFlagWithDelay() // Reiniciar el flag después de un delay
+            }
+        }
+    }
+
+    private fun showExitToast() {
+        // Mostrar un mensaje avisando al usuario que debe presionar "Atrás" nuevamente
+        Toast.makeText(this, "Presiona nuevamente para salir", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun resetBackPressedFlagWithDelay() {
+        // Reiniciar el estado de backPressedOnce después de 2 segundos
+        Handler(Looper.getMainLooper()).postDelayed({
+            backPressedOnce = false
+        }, 2000) // 2000 ms = 2 segundos
+    }
+
+    private fun showExitConfirmationDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Salir de la aplicación")
+            .setMessage("¿Estás seguro de que deseas salir?")
+            .setPositiveButton("Sí") { _, _ ->
+                finish() // Cerrar la actividad
+            }
+            .setNegativeButton("No", null)
+            .show()
     }
 
     // Función para cargar el JSON de los assets
@@ -155,11 +210,9 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun SearchScreen(firestore: FirebaseFirestore, isAdmin: Boolean, onLogoutClick: () -> Unit) {
         var query by remember { mutableStateOf("") }
-        var selectedProcedure by remember { mutableStateOf<Procedure?>(null) }
         var searchOption by remember { mutableStateOf("Procedimiento") }
         var areaList by remember { mutableStateOf<List<Area>>(emptyList()) }
         var odontopediatriaList by remember { mutableStateOf<List<Area>>(emptyList()) }
-        var expandedAreas by remember { mutableStateOf<List<String>>(emptyList()) }
         var procedureMap by remember { mutableStateOf<Map<String, List<Procedure>>>(emptyMap()) }
         var searchResults by remember { mutableStateOf<List<Procedure>>(emptyList()) }
         var isDropdownExpanded by remember { mutableStateOf(false) }
@@ -170,7 +223,6 @@ class MainActivity : ComponentActivity() {
         val keyboardController = LocalSoftwareKeyboardController.current
         val context = LocalContext.current
 
-        // Cargar todas las áreas al iniciar
         LaunchedEffect(Unit) {
             fetchAreas(firestore) { fetchedAreas ->
                 areaList = fetchedAreas.sortedBy { it.name }
@@ -422,6 +474,7 @@ class MainActivity : ComponentActivity() {
             }
     }
 }
+
 
 
 
