@@ -167,7 +167,8 @@ class FavoritesActivity : ComponentActivity() {
 
 @Composable
 fun FavoriteProcedureItem(favorite: Procedure, userId: String, firestore: FirebaseFirestore) {
-    var isFavorite by remember { mutableStateOf(true) }  // Ya que es un favorito, iniciamos como true
+    var isFavorite by remember { mutableStateOf(true) }
+    var diagnosisName by remember { mutableStateOf("Cargando...") }
 
     // Función para actualizar el estado de favoritos en Firestore
     fun toggleFavorite() {
@@ -197,6 +198,20 @@ fun FavoriteProcedureItem(favorite: Procedure, userId: String, firestore: Fireba
         }
     }
 
+    // Cargar el nombre del diagnóstico basado en el ID almacenado en favorite.diagnosis
+    LaunchedEffect(favorite.diagnosis) {
+        firestore.collection("diagnosis")
+            .document(favorite.diagnosis) // Usamos el ID almacenado en favorite.diagnosis
+            .get()
+            .addOnSuccessListener { document ->
+                val diagnosis = document.getString("name") // Suponiendo que "name" es el campo que almacena el nombre del diagnóstico
+                diagnosisName = diagnosis ?: "Diagnóstico no encontrado"
+            }
+            .addOnFailureListener {
+                diagnosisName = "Error al cargar diagnóstico"
+            }
+    }
+
     // Si algunos campos están vacíos, se mostrará un texto de "Datos no disponibles"
     Surface(
         modifier = Modifier
@@ -221,15 +236,11 @@ fun FavoriteProcedureItem(favorite: Procedure, userId: String, firestore: Fireba
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Nombre: ${favorite.procedure.ifBlank { "Datos no disponibles" }}",
+                text = "Procedimiento: ${favorite.procedure.ifBlank { "Datos no disponibles" }}",
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
             )
             Text(
-                text = "Diagnóstico: ${favorite.diagnosis.ifBlank { "Datos no disponibles" }}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(
-                text = "CIE-10 Diagnóstico: ${favorite.cie10diagnosis.ifBlank { "Datos no disponibles" }}",
+                text = "Diagnóstico: $diagnosisName",  // Mostrar el nombre del diagnóstico cargado
                 style = MaterialTheme.typography.bodyMedium
             )
 
@@ -246,3 +257,4 @@ fun FavoriteProcedureItem(favorite: Procedure, userId: String, firestore: Fireba
         }
     }
 }
+

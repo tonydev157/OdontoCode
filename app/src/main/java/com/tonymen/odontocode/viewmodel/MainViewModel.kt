@@ -13,6 +13,7 @@ import com.tonymen.odontocode.data.UserType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.text.Normalizer
 
 class MainViewModel : ViewModel() {
     val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
@@ -42,7 +43,6 @@ class MainViewModel : ViewModel() {
     private val _searchCriteria = MutableStateFlow("procedure") // Criterio por defecto
     val searchCriteria: StateFlow<String> = _searchCriteria
 
-
     init {
         checkUserRole()
         loadAreas()
@@ -64,21 +64,29 @@ class MainViewModel : ViewModel() {
 
     // 2. Búsqueda de procedimientos (por código o nombre)
     fun filterProcedureList(query: String, procedureList: List<Procedure>) {
+        val normalizedQuery = normalizeString(query)
+
         val results = procedureList.filter { procedure ->
             when (_searchCriteria.value) {
-                "procedure" -> procedure.procedure.contains(query, ignoreCase = true)
-                "cie10procedure" -> procedure.cie10procedure.contains(query, ignoreCase = true)
-                "diagnosis" -> procedure.diagnosis.contains(query, ignoreCase = true)
-                "cie10diagnosis" -> procedure.cie10diagnosis.contains(query, ignoreCase = true)
+                "procedure" -> normalizeString(procedure.procedure).contains(normalizedQuery, ignoreCase = true)
+                "cie10procedure" -> normalizeString(procedure.cie10procedure).contains(normalizedQuery, ignoreCase = true)
+                "diagnosis" -> normalizeString(procedure.diagnosis).contains(normalizedQuery, ignoreCase = true)
                 else -> false
             }
         }
         _searchResults.value = results
     }
+
     fun updateSearchCriteria(criteria: String) {
         _searchCriteria.value = criteria
     }
 
+    // Función para normalizar cadenas, eliminando tildes y convirtiendo a minúsculas
+    private fun normalizeString(input: String): String {
+        return Normalizer.normalize(input, Normalizer.Form.NFD)
+            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+            .lowercase()
+    }
 
     // 3. Manejo de favoritos (agregar o eliminar favoritos)
     fun toggleFavorite(procedureId: String) {

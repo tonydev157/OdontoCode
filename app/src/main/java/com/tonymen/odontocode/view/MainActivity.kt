@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
@@ -194,15 +195,32 @@ class MainActivity : ComponentActivity() {
         procedureList: List<Procedure>,
         searchOption: String
     ): List<Procedure> {
+        // Normalizar la consulta eliminando tildes y convirtiendo a minúsculas
+        val normalizedQuery = normalizeString(query)
+
         return procedureList.filter { procedure ->
-            when (searchOption) {
-                "Procedimiento" -> procedure.procedure.contains(query, ignoreCase = true)
-                "CIE-10 Procedimiento" -> procedure.cie10procedure.contains(query, ignoreCase = true)
-                "Diagnóstico" -> procedure.diagnosis.contains(query, ignoreCase = true)
-                "CIE-10 Diagnóstico" -> procedure.cie10diagnosis.contains(query, ignoreCase = true)
-                else -> false
+            val normalizedProcedure = when (searchOption) {
+                "Procedimiento" -> normalizeString(procedure.procedure)
+                "CIE-10 Procedimiento" -> normalizeString(procedure.cie10procedure)
+                "Diagnóstico" -> normalizeString(procedure.diagnosis)
+                else -> ""
             }
+
+            normalizedProcedure.contains(normalizedQuery, ignoreCase = true)
         }
+    }
+
+    // Función para normalizar cadenas, eliminando tildes y convirtiendo a minúsculas
+    fun normalizeString(input: String): String {
+        return input
+            .lowercase() // Convierte a minúsculas
+            .replace("á", "a")
+            .replace("é", "e")
+            .replace("í", "i")
+            .replace("ó", "o")
+            .replace("ú", "u")
+            .replace("ü", "u") // Para caracteres con diéresis
+            .replace("ñ", "n")
     }
 
     // Componente de la interfaz que muestra las áreas y procedimientos
@@ -214,10 +232,15 @@ class MainActivity : ComponentActivity() {
         var areaList by remember { mutableStateOf<List<Area>>(emptyList()) }
         var odontopediatriaList by remember { mutableStateOf<List<Area>>(emptyList()) }
         var procedureMap by remember { mutableStateOf<Map<String, List<Procedure>>>(emptyMap()) }
+        var diagnosisMap by remember { mutableStateOf<Map<String, List<Diagnosis>>>(emptyMap()) }
+        var diagnosisOdontopediatriaMap by remember { mutableStateOf<Map<String, List<Diagnosis>>>(emptyMap()) }
         var searchResults by remember { mutableStateOf<List<Procedure>>(emptyList()) }
         var isDropdownExpanded by remember { mutableStateOf(false) }
         var allProcedureList by remember { mutableStateOf<List<Procedure>>(emptyList()) }
         var settingsMenuExpanded by remember { mutableStateOf(false) }
+        var expandedAreas by remember { mutableStateOf<Set<String>>(emptySet()) } // Manejo del estado de las áreas
+        var expandedDiagnosis by remember { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
+        var selectedProcedure by remember { mutableStateOf<Procedure?>(null) }
 
         val focusRequester = remember { FocusRequester() }
         val keyboardController = LocalSoftwareKeyboardController.current
@@ -231,6 +254,7 @@ class MainActivity : ComponentActivity() {
             fetchAreasOdontopediatria(firestore) { fetchedOdontopediatria ->
                 odontopediatriaList = fetchedOdontopediatria.sortedBy { it.name }
             }
+
             fetchProcedures(firestore) { fetchedProcedures ->
                 allProcedureList = fetchedProcedures
                 searchResults = filterProcedureList(query, allProcedureList, searchOption)
@@ -240,7 +264,7 @@ class MainActivity : ComponentActivity() {
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
-                    title = { Text("Search Procedure") },
+                    title = { Text("Buscador CIE-10") },
                     actions = {
                         IconButton(onClick = { settingsMenuExpanded = true }) {
                             Icon(Icons.Filled.Settings, contentDescription = "Settings")
@@ -309,7 +333,7 @@ class MainActivity : ComponentActivity() {
                         .padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Search by: ", style = MaterialTheme.typography.titleMedium)
+                    Text("Buscar por: ", style = MaterialTheme.typography.titleMedium)
 
                     // Dropdown de selección
                     var expanded by remember { mutableStateOf(false) }
@@ -379,37 +403,90 @@ class MainActivity : ComponentActivity() {
                 // Espacio entre el buscador y la lista de áreas
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Contenido desplazable para áreas y odontopediatría
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
                 ) {
                     // Mostrar áreas normales primero
-                    items(areaList) { area ->
+                    items(areaList, key = { it.id }) { area ->
                         Column {
                             AreaRow(area = area, onAreaSelected = {
                                 if (expandedAreas.contains(area.id)) {
+                                    // Colapsamos el área y cerramos los diagnósticos
                                     expandedAreas = expandedAreas - area.id
+                                    expandedDiagnosis = expandedDiagnosis.filterNot { diagnosisEntry ->
+                                        diagnosisMap[area.id]?.any { it.id == diagnosisEntry.key } ?: false
+                                    }
                                 } else {
+                                    // Expandimos el área y cargamos los diagnósticos
                                     expandedAreas = expandedAreas + area.id
-                                    // Cargar procedimientos para el área seleccionada
-                                    fetchProceduresByArea(firestore, area.id) { procedureList ->
-                                        procedureMap = procedureMap.toMutableMap().apply {
-                                            put(area.id, procedureList)
+                                    fetchDiagnosesByArea(firestore, area.id) { diagnosisList ->
+                                        diagnosisMap = diagnosisMap.toMutableMap().apply {
+                                            put(area.id, diagnosisList)
+                                        }
+
+                                        // Añadir diagnóstico "Sin agrupar" para procedimientos sin diagnóstico
+                                        val ungroupedProcedures = allProcedureList.filter { it.diagnosis == "N/A" && it.area == area.id }
+                                        if (ungroupedProcedures.isNotEmpty()) {
+                                            val sinAgruparDiagnosis = Diagnosis(
+                                                id = "ungrouped_${area.id}",
+                                                name = "Sin agrupar",
+                                                cie10diagnosis = "N/A",
+                                                area = area.id
+                                            )
+                                            diagnosisMap = diagnosisMap.toMutableMap().apply {
+                                                put(area.id, diagnosisMap[area.id]?.plus(sinAgruparDiagnosis) ?: listOf(sinAgruparDiagnosis))
+                                            }
+                                            procedureMap = procedureMap.toMutableMap().apply {
+                                                put(sinAgruparDiagnosis.id, ungroupedProcedures)
+                                            }
+
+                                            // Asegurarse de que se expande manualmente, sin que se cierre después
+                                            expandedDiagnosis = expandedDiagnosis.toMutableMap().apply {
+                                                put(sinAgruparDiagnosis.id, true)  // Asegurar que se expande al cargar correctamente
+                                            }
                                         }
                                     }
                                 }
                             })
 
-                            // Mostrar procedimientos relacionados al área
+                            // Mostrar diagnósticos relacionados al área
                             if (expandedAreas.contains(area.id)) {
-                                procedureMap[area.id]?.forEach { procedureItem ->
-                                    AnimatedProcedureRow(
-                                        procedure = procedureItem,
-                                        onProcedureSelected = { selectedProcedure = it },
-                                        onMoreSelected = { selectedProcedure = procedureItem }
+                                diagnosisMap[area.id]?.forEach { diagnosisItem ->
+                                    // Mostrar cada diagnóstico con un botón de expansión
+                                    DiagnosisRow(
+                                        diagnosis = diagnosisItem,
+                                        isExpanded = expandedDiagnosis[diagnosisItem.id] == true,
+                                        onExpandClick = {
+                                            if (expandedDiagnosis.containsKey(diagnosisItem.id)) {
+                                                expandedDiagnosis = expandedDiagnosis.toMutableMap().apply {
+                                                    put(diagnosisItem.id, !(this[diagnosisItem.id] ?: false))
+                                                }
+                                            } else {
+                                                expandedDiagnosis = expandedDiagnosis.toMutableMap().apply {
+                                                    put(diagnosisItem.id, true)
+                                                }
+                                                // Cargar procedimientos relacionados al diagnóstico
+                                                fetchProceduresByDiagnosis(firestore, diagnosisItem.id) { procedureList ->
+                                                    procedureMap = procedureMap.toMutableMap().apply {
+                                                        put(diagnosisItem.id, procedureList)
+                                                    }
+                                                }
+                                            }
+                                        }
                                     )
+
+                                    // Mostrar procedimientos si el diagnóstico está expandido
+                                    if (expandedDiagnosis[diagnosisItem.id] == true) {
+                                        procedureMap[diagnosisItem.id]?.forEach { procedureItem ->
+                                            AnimatedProcedureRow(
+                                                procedure = procedureItem,
+                                                onProcedureSelected = { selectedProcedure = it },
+                                                onMoreSelected = { selectedProcedure = procedureItem }
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -428,42 +505,159 @@ class MainActivity : ComponentActivity() {
                     }
 
                     // Mostrar áreas de odontopediatría
-                    items(odontopediatriaList) { area ->
+                    items(odontopediatriaList, key = { it.id }) { area ->
                         Column {
                             AreaRow(area = area, onAreaSelected = {
                                 if (expandedAreas.contains(area.id)) {
                                     expandedAreas = expandedAreas - area.id
+                                    expandedDiagnosis = expandedDiagnosis.filterNot { diagnosisEntry ->
+                                        diagnosisOdontopediatriaMap[area.id]?.any { it.id == diagnosisEntry.key } ?: false
+                                    }
                                 } else {
                                     expandedAreas = expandedAreas + area.id
-                                    // Cargar procedimientos para el área seleccionada
-                                    fetchProceduresByArea(firestore, area.id) { procedureList ->
-                                        procedureMap = procedureMap.toMutableMap().apply {
-                                            put(area.id, procedureList)
+                                    fetchDiagnosesByOdontopediatriaArea(firestore, area.id) { diagnosisList ->
+                                        diagnosisOdontopediatriaMap = diagnosisOdontopediatriaMap.toMutableMap().apply {
+                                            put(area.id, diagnosisList)
+                                        }
+
+                                        // Añadir diagnóstico "Sin agrupar" para procedimientos sin diagnóstico
+                                        val ungroupedProcedures = allProcedureList.filter { it.diagnosis == "N/A" && it.area == area.id }
+                                        if (ungroupedProcedures.isNotEmpty()) {
+                                            val sinAgruparDiagnosis = Diagnosis(
+                                                id = "ungrouped_${area.id}",
+                                                name = "Sin agrupar",
+                                                cie10diagnosis = "N/A",
+                                                area = area.id
+                                            )
+                                            diagnosisOdontopediatriaMap = diagnosisOdontopediatriaMap.toMutableMap().apply {
+                                                put(area.id, diagnosisOdontopediatriaMap[area.id]?.plus(sinAgruparDiagnosis) ?: listOf(sinAgruparDiagnosis))
+                                            }
+                                            procedureMap = procedureMap.toMutableMap().apply {
+                                                put(sinAgruparDiagnosis.id, ungroupedProcedures)
+                                            }
+
+                                            // Asegurar que se expanda correctamente
+                                            expandedDiagnosis = expandedDiagnosis.toMutableMap().apply {
+                                                put(sinAgruparDiagnosis.id, true)
+                                            }
                                         }
                                     }
                                 }
                             })
 
-                            // Mostrar procedimientos relacionados al área de odontopediatría
+                            // Mostrar diagnósticos relacionados al área de odontopediatría
                             if (expandedAreas.contains(area.id)) {
-                                procedureMap[area.id]?.forEach { procedureItem ->
-                                    AnimatedProcedureRow(
-                                        procedure = procedureItem,
-                                        onProcedureSelected = { selectedProcedure = it },
-                                        onMoreSelected = { selectedProcedure = procedureItem }
+                                diagnosisOdontopediatriaMap[area.id]?.forEach { diagnosisItem ->
+                                    DiagnosisRow(
+                                        diagnosis = diagnosisItem,
+                                        isExpanded = expandedDiagnosis[diagnosisItem.id] == true,
+                                        onExpandClick = {
+                                            if (expandedDiagnosis.containsKey(diagnosisItem.id)) {
+                                                expandedDiagnosis = expandedDiagnosis.toMutableMap().apply {
+                                                    put(diagnosisItem.id, !(this[diagnosisItem.id] ?: false))
+                                                }
+                                            } else {
+                                                expandedDiagnosis = expandedDiagnosis.toMutableMap().apply {
+                                                    put(diagnosisItem.id, true)
+                                                }
+                                                // Cargar procedimientos relacionados al diagnóstico
+                                                fetchProceduresByDiagnosis(firestore, diagnosisItem.id) { procedureList ->
+                                                    procedureMap = procedureMap.toMutableMap().apply {
+                                                        put(diagnosisItem.id, procedureList)
+                                                    }
+                                                }
+                                            }
+                                        }
                                     )
+
+                                    // Mostrar procedimientos si el diagnóstico está expandido
+                                    if (expandedDiagnosis[diagnosisItem.id] == true) {
+                                        procedureMap[diagnosisItem.id]?.forEach { procedureItem ->
+                                            AnimatedProcedureRow(
+                                                procedure = procedureItem,
+                                                onProcedureSelected = { selectedProcedure = it },
+                                                onMoreSelected = { selectedProcedure = procedureItem }
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
+
+
+
             }
         }
     }
 
-    // Función para cargar procedimientos
-    private fun fetchProcedures(firestore: FirebaseFirestore, onResult: (List<Procedure>) -> Unit) {
+    // Funciones para cargar datos
+    fun fetchAreas(firestore: FirebaseFirestore, onResult: (List<Area>) -> Unit) {
+        firestore.collection("areas")
+            .get()
+            .addOnSuccessListener { documents ->
+                val areaList = documents.map { it.toObject(Area::class.java) }
+                onResult(areaList)
+            }
+            .addOnFailureListener {
+                onResult(emptyList())
+            }
+    }
+
+    fun fetchAreasOdontopediatria(firestore: FirebaseFirestore, onResult: (List<Area>) -> Unit) {
+        firestore.collection("areasodontopediatria")
+            .get()
+            .addOnSuccessListener { documents ->
+                val areaList = documents.map { it.toObject(Area::class.java) }
+                onResult(areaList)
+            }
+            .addOnFailureListener {
+                onResult(emptyList())
+            }
+    }
+
+    fun fetchProcedures(firestore: FirebaseFirestore, onResult: (List<Procedure>) -> Unit) {
         firestore.collection("procedures")
+            .get()
+            .addOnSuccessListener { documents ->
+                val procedureList = documents.map { it.toObject(Procedure::class.java) }
+                onResult(procedureList)
+            }
+            .addOnFailureListener {
+                onResult(emptyList())
+            }
+    }
+
+    fun fetchDiagnosesByArea(firestore: FirebaseFirestore, area: String, onResult: (List<Diagnosis>) -> Unit) {
+        firestore.collection("diagnosis")
+            .whereEqualTo("area", area)
+            .get()
+            .addOnSuccessListener { documents ->
+                val diagnosisList = documents.map { it.toObject(Diagnosis::class.java) }
+                onResult(diagnosisList)
+            }
+            .addOnFailureListener {
+                onResult(emptyList())
+            }
+    }
+
+    fun fetchDiagnosesByOdontopediatriaArea(firestore: FirebaseFirestore, area: String, onResult: (List<Diagnosis>) -> Unit) {
+        firestore.collection("diagnosisodontopediatria")
+            .whereEqualTo("area", area)
+            .get()
+            .addOnSuccessListener { documents ->
+                val diagnosisList = documents.map { it.toObject(Diagnosis::class.java) }
+                onResult(diagnosisList)
+            }
+            .addOnFailureListener {
+                onResult(emptyList())
+            }
+    }
+
+    fun fetchProceduresByDiagnosis(firestore: FirebaseFirestore, diagnosisId: String, onResult: (List<Procedure>) -> Unit) {
+        firestore.collection("procedures")
+            .whereEqualTo("diagnosis", diagnosisId)
             .get()
             .addOnSuccessListener { documents ->
                 val procedureList = documents.map { it.toObject(Procedure::class.java) }
@@ -479,7 +673,7 @@ class MainActivity : ComponentActivity() {
 
 
 
-// Componente de barra de búsqueda con menú desplegable
+    // Componente de barra de búsqueda con menú desplegable
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun SearchBarWithDropdown(
@@ -500,7 +694,7 @@ fun SearchBarWithDropdown(
         OutlinedTextField(
             value = query,
             onValueChange = onQueryChange,
-            label = { Text("Enter procedure code or name") },
+            label = { Text("Buscador") },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
             modifier = Modifier
                 .fillMaxWidth()
@@ -568,6 +762,43 @@ fun AreaRow(area: Area, onAreaSelected: (Area) -> Unit) {
         Text(area.name, style = MaterialTheme.typography.bodyLarge)
     }
 }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DiagnosisRow(
+    diagnosis: Diagnosis,
+    isExpanded: Boolean,
+    onExpandClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        shape = RoundedCornerShape(12.dp),
+        tonalElevation = 4.dp,
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = diagnosis.name,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
+            )
+            IconButton(onClick = onExpandClick) {
+                Icon(
+                    imageVector = if (isExpanded) Icons.Filled.ArrowDropUp else Icons.Filled.ArrowDropDown,
+                    contentDescription = if (isExpanded) "Ocultar procedimientos" else "Mostrar procedimientos"
+                )
+            }
+        }
+    }
+}
+
 
 // Componente para cada fila de procedimiento (con animación)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -726,6 +957,7 @@ fun AnimatedProcedureRow(
 }
 
 // Detalle del procedimiento
+// Detalle del procedimiento
 @Composable
 fun ProcedureDetail(
     mainViewModel: MainViewModel,
@@ -735,6 +967,7 @@ fun ProcedureDetail(
 ) {
     var isFavorite by remember { mutableStateOf(false) }
     var areaName by remember { mutableStateOf("Cargando...") }
+    var diagnosisName by remember { mutableStateOf("Cargando...") }
 
     // Verificar si el procedimiento es favorito al cargar
     LaunchedEffect(procedure.id) {
@@ -761,6 +994,17 @@ fun ProcedureDetail(
             }
     }
 
+    // Cargar el nombre del diagnóstico usando el ID del diagnóstico que está en procedure.diagnosis
+    LaunchedEffect(procedure.diagnosis) {
+        firestore.collection("diagnosis")
+            .document(procedure.diagnosis)  // Usamos el ID del diagnóstico almacenado en procedure.diagnosis
+            .get()
+            .addOnSuccessListener { document ->
+                val diagnosis = document.toObject(Diagnosis::class.java)
+                diagnosisName = diagnosis?.name ?: "Diagnóstico no encontrado"
+            }
+    }
+
     // UI de la pantalla de detalle
     Surface(modifier = Modifier.padding(16.dp), shape = RoundedCornerShape(12.dp), tonalElevation = 4.dp) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -777,8 +1021,7 @@ fun ProcedureDetail(
             // Mostrar los detalles del procedimiento
             Text(text = "Name: ${procedure.procedure}", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
             Text(text = "CIE-10 Procedure: ${procedure.cie10procedure}", style = MaterialTheme.typography.bodyMedium)
-            Text(text = "Diagnosis: ${procedure.diagnosis}", style = MaterialTheme.typography.bodyMedium)
-            Text(text = "CIE-10 Diagnosis: ${procedure.cie10diagnosis}", style = MaterialTheme.typography.bodyMedium)
+            Text(text = "Diagnosis: $diagnosisName", style = MaterialTheme.typography.bodyMedium)  // Mostramos el nombre del diagnóstico
             Text(text = "Area: $areaName", style = MaterialTheme.typography.bodyMedium)
 
             // Mostrar el corazón para marcar como favorito
@@ -795,6 +1038,7 @@ fun ProcedureDetail(
         }
     }
 }
+
 
 // Implementar funciones fetchAreas y fetchProceduresByArea
 fun fetchAreas(firestore: FirebaseFirestore, onResult: (List<Area>) -> Unit) {

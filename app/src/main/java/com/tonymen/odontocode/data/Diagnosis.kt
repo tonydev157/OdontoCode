@@ -3,10 +3,9 @@ package com.tonymen.odontocode.data
 data class Diagnosis(
     val id: String = "",              // Unique ID of the diagnosis
     val name: String = "",            // Name of the diagnosis
-    val description: String = "",     // Detailed description of the diagnosis
-    var category: String = "",        // Category or type of diagnosis
-    val code: String = ""             // CIE-10 code
+    val cie10diagnosis: String = "",     // Detailed description of the diagnosis
+    var area: String = "",        // Category or type of diagnosis
 ) {
     // Constructor vacío requerido por Firestore
-    constructor() : this("", "", "", "", "")
+    constructor() : this("", "", "", "")
 }
