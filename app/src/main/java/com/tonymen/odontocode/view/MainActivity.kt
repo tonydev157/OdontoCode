@@ -13,6 +13,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -90,9 +91,9 @@ class MainActivity : ComponentActivity() {
                 // Si hay un procedimiento seleccionado, deseleccionarlo
                 selectedProcedure = null
             }
-            expandedAreas.isNotEmpty() -> {
-                // Si hay áreas expandidas, colapsarlas
-                expandedAreas = emptyList()
+            mainViewModel.expandedAreas.value.isNotEmpty() -> {
+                // Colapsar todas las áreas utilizando el ViewModel
+                mainViewModel.collapseAllAreas() // Nueva función que debes implementar en el ViewModel
             }
             backPressedOnce -> {
                 // Si ya se presionó "Atrás" una vez, salir de la aplicación
@@ -108,16 +109,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+
+    // Mostrar el mensaje de salida
     private fun showExitToast() {
-        // Mostrar un mensaje avisando al usuario que debe presionar "Atrás" nuevamente
         Toast.makeText(this, "Presiona nuevamente para salir", Toast.LENGTH_SHORT).show()
     }
 
+    // Reiniciar el flag después de 2 segundos
     private fun resetBackPressedFlagWithDelay() {
-        // Reiniciar el estado de backPressedOnce después de 2 segundos
         Handler(Looper.getMainLooper()).postDelayed({
             backPressedOnce = false
-        }, 2000) // 2000 ms = 2 segundos
+        }, 2000)
     }
 
     private fun showExitConfirmationDialog() {
@@ -238,7 +240,6 @@ class MainActivity : ComponentActivity() {
         var isDropdownExpanded by remember { mutableStateOf(false) }
         var allProcedureList by remember { mutableStateOf<List<Procedure>>(emptyList()) }
         var settingsMenuExpanded by remember { mutableStateOf(false) }
-        var expandedAreas by remember { mutableStateOf<Set<String>>(emptySet()) } // Manejo del estado de las áreas
         var expandedDiagnosis by remember { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
         var selectedProcedure by remember { mutableStateOf<Procedure?>(null) }
 
@@ -353,14 +354,14 @@ class MainActivity : ComponentActivity() {
                                 searchOption = "CIE-10 Procedimiento"
                                 expanded = false
                             }, text = { Text("CIE-10 Procedimiento") })
-                            DropdownMenuItem(onClick = {
-                                searchOption = "Diagnóstico"
-                                expanded = false
-                            }, text = { Text("Diagnóstico") })
-                            DropdownMenuItem(onClick = {
-                                searchOption = "CIE-10 Diagnóstico"
-                                expanded = false
-                            }, text = { Text("CIE-10 Diagnóstico") })
+//                            DropdownMenuItem(onClick = {
+//                                searchOption = "Diagnóstico"
+//                                expanded = false
+//                            }, text = { Text("Diagnóstico") })
+//                            DropdownMenuItem(onClick = {
+//                                searchOption = "CIE-10 Diagnóstico"
+//                                expanded = false
+//                            }, text = { Text("CIE-10 Diagnóstico") })
                         }
                     }
                 }
@@ -674,79 +675,89 @@ class MainActivity : ComponentActivity() {
 
 
     // Componente de barra de búsqueda con menú desplegable
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
-@Composable
-fun SearchBarWithDropdown(
-    query: String,
-    searchResults: List<Procedure>,
-    onQueryChange: (String) -> Unit,
-    onSearch: () -> Unit,
-    onResultSelected: (Procedure) -> Unit,
-    isDropdownExpanded: Boolean,
-    onDismissDropdown: () -> Unit,
-    focusRequester: FocusRequester,
-    keyboardController: SoftwareKeyboardController?
-) {
-    // Definir una altura máxima para el menú desplegable
-    val maxHeight = 200.dp
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun SearchBarWithDropdown(
+        query: String,
+        searchResults: List<Procedure>,
+        onQueryChange: (String) -> Unit,
+        onSearch: () -> Unit,
+        onResultSelected: (Procedure) -> Unit,
+        isDropdownExpanded: Boolean,
+        onDismissDropdown: () -> Unit,
+        focusRequester: FocusRequester,
+        keyboardController: SoftwareKeyboardController?
+    ) {
+        // Definir una altura máxima para el menú desplegable
+        val maxHeight = 200.dp
 
-    Column {
-        OutlinedTextField(
-            value = query,
-            onValueChange = onQueryChange,
-            label = { Text("Buscador") },
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
-                .padding(8.dp)
-                .focusRequester(focusRequester)
-                .onFocusChanged { focusState ->
-                    if (focusState.isFocused) {
-                        keyboardController?.show() // Mostrar el teclado si el campo está enfocado
-                    }
-                },
-            singleLine = true,
-            textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface),
-            keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(
-                onSearch = {
-                    onSearch()
-                    keyboardController?.hide() // Esconder el teclado después de buscar
-                }
-            )
-        )
+        // Determinar si el tema es claro u oscuro
+        val isLightTheme = !isSystemInDarkTheme()
 
-        // Lista desplegable de resultados de búsqueda con altura limitada
-        DropdownMenu(
-            expanded = isDropdownExpanded,
-            onDismissRequest = {
-                onDismissDropdown()
-                focusRequester.requestFocus()
-                keyboardController?.show()
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(max = maxHeight)
-        ) {
-            searchResults.forEach { result ->
-                DropdownMenuItem(
-                    onClick = {
-                        onResultSelected(result)
-                        focusRequester.requestFocus()
-                        keyboardController?.show()
-                    },
-                    text = {
-                        Column {
-                            Text(result.cie10procedure, style = MaterialTheme.typography.bodyMedium)
-                            Text(result.procedure, style = MaterialTheme.typography.bodySmall)
+        Column {
+            OutlinedTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                label = { Text("Buscador") },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
+                    .padding(8.dp)
+                    .focusRequester(focusRequester)
+                    .onFocusChanged { focusState ->
+                        if (focusState.isFocused) {
+                            keyboardController?.show() // Mostrar el teclado si el campo está enfocado
                         }
+                    },
+                singleLine = true,
+                textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface),
+                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(
+                    onSearch = {
+                        onSearch()
+                        keyboardController?.hide() // Esconder el teclado después de buscar
                     }
                 )
+            )
+
+            // Lista desplegable de resultados de búsqueda con altura limitada
+            DropdownMenu(
+                expanded = isDropdownExpanded,
+                onDismissRequest = {
+                    onDismissDropdown()
+                    focusRequester.requestFocus()
+                    keyboardController?.show()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = maxHeight)
+            ) {
+                searchResults.forEach { result ->
+                    DropdownMenuItem(
+                        onClick = {
+                            onResultSelected(result)
+                            focusRequester.requestFocus()
+                            keyboardController?.show()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                if (isLightTheme) Color(0xFFE0F7FA) // Lila suave para tema claro
+                                else Color(0xFF000B33)              // Morado profundo para tema oscuro
+                            ),
+                        text = {
+                            Column {
+                                Text(result.cie10procedure, style = MaterialTheme.typography.bodyMedium)
+                                Text(result.procedure, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    )
+                }
             }
         }
     }
-}
+
 
 // Componente para cada fila de área
 @Composable
@@ -770,13 +781,25 @@ fun DiagnosisRow(
     onExpandClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Detectar si el sistema está usando el tema oscuro o claro
+    val isLightTheme = !isSystemInDarkTheme()
+
+// Definir los colores personalizados para DiagnosisRow según el tema claro u oscuro
+    val backgroundColor = if (isLightTheme) {
+        Color(0xFFE1BEE7)  // Morado claro para tema claro
+    } else {
+        Color(0xFF4A148C)  // Azul oscuro para tema oscuro
+    }
+
+
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .padding(8.dp),
         shape = RoundedCornerShape(12.dp),
         tonalElevation = 4.dp,
-        color = MaterialTheme.colorScheme.surface
+        color = backgroundColor  // Usar el color personalizado
     ) {
         Row(
             modifier = Modifier
@@ -798,6 +821,8 @@ fun DiagnosisRow(
         }
     }
 }
+
+
 
 
 // Componente para cada fila de procedimiento (con animación)
@@ -968,6 +993,7 @@ fun ProcedureDetail(
     var isFavorite by remember { mutableStateOf(false) }
     var areaName by remember { mutableStateOf("Cargando...") }
     var diagnosisName by remember { mutableStateOf("Cargando...") }
+    var diagnosisCIE10 by remember { mutableStateOf("Cargando...") }  // Nueva variable para CIE-10 del diagnóstico
 
     // Verificar si el procedimiento es favorito al cargar
     LaunchedEffect(procedure.id) {
@@ -983,25 +1009,49 @@ fun ProcedureDetail(
         }
     }
 
-    // Cargar el nombre del área
+    // Cargar el nombre del área considerando áreas normales y odontopediatría
     LaunchedEffect(procedure.area) {
         firestore.collection("areas")
             .document(procedure.area)
             .get()
             .addOnSuccessListener { document ->
                 val area = document.toObject(Area::class.java)
-                areaName = area?.name ?: "Área no encontrada"
+                if (area != null) {
+                    areaName = area.name
+                } else {
+                    // Si no se encuentra en áreas normales, buscar en áreas de odontopediatría
+                    firestore.collection("areasodontopediatria")
+                        .document(procedure.area)
+                        .get()
+                        .addOnSuccessListener { odontopediatriaDocument ->
+                            val odontopediatriaArea = odontopediatriaDocument.toObject(Area::class.java)
+                            areaName = odontopediatriaArea?.name ?: "Área no encontrada"
+                        }
+                }
             }
     }
 
-    // Cargar el nombre del diagnóstico usando el ID del diagnóstico que está en procedure.diagnosis
+    // Cargar el nombre del diagnóstico considerando diagnósticos normales y de odontopediatría
     LaunchedEffect(procedure.diagnosis) {
         firestore.collection("diagnosis")
-            .document(procedure.diagnosis)  // Usamos el ID del diagnóstico almacenado en procedure.diagnosis
+            .document(procedure.diagnosis)
             .get()
             .addOnSuccessListener { document ->
                 val diagnosis = document.toObject(Diagnosis::class.java)
-                diagnosisName = diagnosis?.name ?: "Diagnóstico no encontrado"
+                if (diagnosis != null) {
+                    diagnosisName = diagnosis.name
+                    diagnosisCIE10 = diagnosis.cie10diagnosis // Asignar el CIE-10 del diagnóstico
+                } else {
+                    // Si no se encuentra en diagnósticos normales, buscar en diagnósticos de odontopediatría
+                    firestore.collection("diagnosisodontopediatria")
+                        .document(procedure.diagnosis)
+                        .get()
+                        .addOnSuccessListener { odontopediatriaDocument ->
+                            val odontopediatriaDiagnosis = odontopediatriaDocument.toObject(Diagnosis::class.java)
+                            diagnosisName = odontopediatriaDiagnosis?.name ?: "Diagnóstico no encontrado"
+                            diagnosisCIE10 = odontopediatriaDiagnosis?.cie10diagnosis ?: "CIE-10 no encontrado" // Asignar el CIE-10 del diagnóstico
+                        }
+                }
             }
     }
 
@@ -1009,7 +1059,7 @@ fun ProcedureDetail(
     Surface(modifier = Modifier.padding(16.dp), shape = RoundedCornerShape(12.dp), tonalElevation = 4.dp) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(text = "Procedure Code: ${procedure.cie10procedure}", style = MaterialTheme.typography.titleMedium)
+                Text(text = "Código de Procedimiento: ${procedure.cie10procedure}", style = MaterialTheme.typography.titleMedium)
                 IconButton(onClick = onDismiss) {
                     Icon(Icons.Filled.Close, contentDescription = "Close")
                 }
@@ -1019,10 +1069,10 @@ fun ProcedureDetail(
             Spacer(modifier = Modifier.height(8.dp))
 
             // Mostrar los detalles del procedimiento
-            Text(text = "Name: ${procedure.procedure}", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
-            Text(text = "CIE-10 Procedure: ${procedure.cie10procedure}", style = MaterialTheme.typography.bodyMedium)
-            Text(text = "Diagnosis: $diagnosisName", style = MaterialTheme.typography.bodyMedium)  // Mostramos el nombre del diagnóstico
-            Text(text = "Area: $areaName", style = MaterialTheme.typography.bodyMedium)
+            Text(text = "Procedimiento: ${procedure.procedure}", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+            Text(text = "Diagnóstico: $diagnosisName", style = MaterialTheme.typography.bodyMedium)  // Mostramos el nombre del diagnóstico
+            Text(text = "Codigo de Diagnóstico: $diagnosisCIE10", style = MaterialTheme.typography.bodyMedium)  // Mostramos el CIE-10 del diagnóstico
+            Text(text = "Área: $areaName", style = MaterialTheme.typography.bodyMedium)  // Mostramos el nombre del área
 
             // Mostrar el corazón para marcar como favorito
             IconButton(onClick = {
@@ -1038,6 +1088,7 @@ fun ProcedureDetail(
         }
     }
 }
+
 
 
 // Implementar funciones fetchAreas y fetchProceduresByArea

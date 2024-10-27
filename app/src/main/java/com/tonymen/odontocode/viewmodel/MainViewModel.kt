@@ -63,19 +63,7 @@ class MainViewModel : ViewModel() {
     }
 
     // 2. Búsqueda de procedimientos (por código o nombre)
-    fun filterProcedureList(query: String, procedureList: List<Procedure>) {
-        val normalizedQuery = normalizeString(query)
 
-        val results = procedureList.filter { procedure ->
-            when (_searchCriteria.value) {
-                "procedure" -> normalizeString(procedure.procedure).contains(normalizedQuery, ignoreCase = true)
-                "cie10procedure" -> normalizeString(procedure.cie10procedure).contains(normalizedQuery, ignoreCase = true)
-                "diagnosis" -> normalizeString(procedure.diagnosis).contains(normalizedQuery, ignoreCase = true)
-                else -> false
-            }
-        }
-        _searchResults.value = results
-    }
 
     fun updateSearchCriteria(criteria: String) {
         _searchCriteria.value = criteria
@@ -145,6 +133,10 @@ class MainViewModel : ViewModel() {
             }
             .addOnFailureListener { Log.e("MainViewModel", "Error loading odontopediatria areas") }
     }
+    fun collapseAllAreas() {
+        _expandedAreas.value = emptyList() // Colapsar todas las áreas
+    }
+
 
     // 5. Carga de procedimientos por área
     fun fetchProceduresByArea(areaId: String) {

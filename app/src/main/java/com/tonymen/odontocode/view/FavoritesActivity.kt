@@ -23,6 +23,7 @@ import androidx.compose.ui.text.input.ImeAction
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.tonymen.odontocode.R
+import com.tonymen.odontocode.data.Diagnosis
 import com.tonymen.odontocode.data.Favorite
 import com.tonymen.odontocode.data.Procedure
 import com.tonymen.odontocode.ui.theme.OdontoCodeTheme
@@ -169,6 +170,8 @@ class FavoritesActivity : ComponentActivity() {
 fun FavoriteProcedureItem(favorite: Procedure, userId: String, firestore: FirebaseFirestore) {
     var isFavorite by remember { mutableStateOf(true) }
     var diagnosisName by remember { mutableStateOf("Cargando...") }
+    var areaName by remember { mutableStateOf("Cargando...") }
+    var diagnosisCIE10 by remember { mutableStateOf("Cargando...") }  // Nueva variable para el CIE-10 del diagnóstico
 
     // Función para actualizar el estado de favoritos en Firestore
     fun toggleFavorite() {
@@ -198,17 +201,33 @@ fun FavoriteProcedureItem(favorite: Procedure, userId: String, firestore: Fireba
         }
     }
 
-    // Cargar el nombre del diagnóstico basado en el ID almacenado en favorite.diagnosis
+    // Cargar el nombre del diagnóstico y su CIE-10 basado en el ID almacenado en favorite.diagnosis
     LaunchedEffect(favorite.diagnosis) {
         firestore.collection("diagnosis")
-            .document(favorite.diagnosis) // Usamos el ID almacenado en favorite.diagnosis
+            .document(favorite.diagnosis)
             .get()
             .addOnSuccessListener { document ->
-                val diagnosis = document.getString("name") // Suponiendo que "name" es el campo que almacena el nombre del diagnóstico
-                diagnosisName = diagnosis ?: "Diagnóstico no encontrado"
+                val diagnosis = document.toObject(Diagnosis::class.java)
+                diagnosisName = diagnosis?.name ?: "Diagnóstico no encontrado"
+                diagnosisCIE10 = diagnosis?.cie10diagnosis ?: "CIE-10 no encontrado" // Asignar el CIE-10 del diagnóstico
             }
             .addOnFailureListener {
                 diagnosisName = "Error al cargar diagnóstico"
+                diagnosisCIE10 = "Error al cargar CIE-10"
+            }
+    }
+
+    // Cargar el nombre del área basado en el ID almacenado en favorite.area
+    LaunchedEffect(favorite.area) {
+        firestore.collection("areas")
+            .document(favorite.area)
+            .get()
+            .addOnSuccessListener { document ->
+                val area = document.getString("name") // Suponiendo que "name" es el campo que almacena el nombre del área
+                areaName = area ?: "Área no encontrada"
+            }
+            .addOnFailureListener {
+                areaName = "Error al cargar área"
             }
     }
 
@@ -243,11 +262,17 @@ fun FavoriteProcedureItem(favorite: Procedure, userId: String, firestore: Fireba
                 text = "Diagnóstico: $diagnosisName",  // Mostrar el nombre del diagnóstico cargado
                 style = MaterialTheme.typography.bodyMedium
             )
+            Text(
+                text = "CIE-10 Diagnóstico: $diagnosisCIE10",  // Mostrar el CIE-10 del diagnóstico cargado
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                text = "Área: $areaName",  // Mostrar el nombre del área cargada
+                style = MaterialTheme.typography.bodyMedium
+            )
 
             // Icono de corazón para marcar/desmarcar como favorito
-            IconButton(
-                onClick = { toggleFavorite() }
-            ) {
+            IconButton(onClick = { toggleFavorite() }) {
                 Icon(
                     painter = if (isFavorite) painterResource(id = R.drawable.ic_favorite) else painterResource(id = R.drawable.ic_favorite_border),
                     contentDescription = if (isFavorite) "Quitar de Favoritos" else "Agregar a Favoritos",
@@ -257,4 +282,5 @@ fun FavoriteProcedureItem(favorite: Procedure, userId: String, firestore: Fireba
         }
     }
 }
+
 
