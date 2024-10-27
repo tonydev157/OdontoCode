@@ -109,7 +109,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
     // Mostrar el mensaje de salida
     private fun showExitToast() {
         Toast.makeText(this, "Presiona nuevamente para salir", Toast.LENGTH_SHORT).show()
@@ -191,24 +190,56 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // Filtrar procedimientos según los diferentes criterios
+    // Función de filtrado con resolución de IDs
     fun filterProcedureList(
         query: String,
         procedureList: List<Procedure>,
-        searchOption: String
+        searchOption: String,
+        diagnosisMap: Map<String, Diagnosis>, // Mapa de diagnósticos (ID a Diagnosis)
+        areaMap: Map<String, Area> // Mapa de áreas (ID a Area)
     ): List<Procedure> {
-        // Normalizar la consulta eliminando tildes y convirtiendo a minúsculas
         val normalizedQuery = normalizeString(query)
 
-        return procedureList.filter { procedure ->
-            val normalizedProcedure = when (searchOption) {
-                "Procedimiento" -> normalizeString(procedure.procedure)
-                "CIE-10 Procedimiento" -> normalizeString(procedure.cie10procedure)
-                "Diagnóstico" -> normalizeString(procedure.diagnosis)
-                else -> ""
-            }
+        return when (searchOption) {
+            "Diagnóstico" -> {
+                // Buscar IDs de diagnósticos que coinciden con el nombre
+                val matchingDiagnosisIds = diagnosisMap.filter { (_, diagnosis) ->
+                    normalizeString(diagnosis.name).contains(normalizedQuery, ignoreCase = true)
+                }.keys.toSet() // Usamos un Set para facilitar la búsqueda
 
-            normalizedProcedure.contains(normalizedQuery, ignoreCase = true)
+                // Filtrar procedimientos cuyos diagnósticos están en matchingDiagnosisIds
+                procedureList.filter { matchingDiagnosisIds.contains(it.diagnosis) }
+            }
+            "CIE-10 Diagnóstico" -> {
+                // Buscar IDs de diagnósticos que coinciden con el CIE-10
+                val matchingDiagnosisIds = diagnosisMap.filter { (_, diagnosis) ->
+                    normalizeString(diagnosis.cie10diagnosis).contains(normalizedQuery, ignoreCase = true)
+                }.keys.toSet()
+
+                // Filtrar procedimientos cuyos diagnósticos están en matchingDiagnosisIds
+                procedureList.filter { matchingDiagnosisIds.contains(it.diagnosis) }
+            }
+            "Procedimiento" -> {
+                // Filtrar procedimientos por nombre
+                procedureList.filter {
+                    normalizeString(it.procedure).contains(normalizedQuery, ignoreCase = true)
+                }
+            }
+            "CIE-10 Procedimiento" -> {
+                // Filtrar procedimientos por CIE-10
+                procedureList.filter {
+                    normalizeString(it.cie10procedure).contains(normalizedQuery, ignoreCase = true)
+                }
+            }
+            "Área" -> {
+                // Filtrar procedimientos por área
+                val matchingAreaIds = areaMap.filter { (_, area) ->
+                    normalizeString(area.name).contains(normalizedQuery, ignoreCase = true)
+                }.keys.toSet() // Extraer IDs de áreas que coinciden
+
+                procedureList.filter { matchingAreaIds.contains(it.area) } // Filtrar procedimientos que pertenecen a esas áreas
+            }
+            else -> emptyList() // Retornar lista vacía si el tipo de búsqueda no es válido
         }
     }
 
@@ -225,7 +256,7 @@ class MainActivity : ComponentActivity() {
             .replace("ñ", "n")
     }
 
-    // Componente de la interfaz que muestra las áreas y procedimientos
+
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun SearchScreen(firestore: FirebaseFirestore, isAdmin: Boolean, onLogoutClick: () -> Unit) {
@@ -235,6 +266,7 @@ class MainActivity : ComponentActivity() {
         var odontopediatriaList by remember { mutableStateOf<List<Area>>(emptyList()) }
         var procedureMap by remember { mutableStateOf<Map<String, List<Procedure>>>(emptyMap()) }
         var diagnosisMap by remember { mutableStateOf<Map<String, List<Diagnosis>>>(emptyMap()) }
+        var areaMap by remember { mutableStateOf<Map<String, Area>>(emptyMap()) } // Mapa de áreas
         var diagnosisOdontopediatriaMap by remember { mutableStateOf<Map<String, List<Diagnosis>>>(emptyMap()) }
         var searchResults by remember { mutableStateOf<List<Procedure>>(emptyList()) }
         var isDropdownExpanded by remember { mutableStateOf(false) }
@@ -248,17 +280,26 @@ class MainActivity : ComponentActivity() {
         val context = LocalContext.current
 
         LaunchedEffect(Unit) {
+            // Cargar las áreas y llenar el mapa
             fetchAreas(firestore) { fetchedAreas ->
                 areaList = fetchedAreas.sortedBy { it.name }
+                areaMap = fetchedAreas.associateBy { it.id }
             }
 
+            // Cargar las áreas de odontopediatría
             fetchAreasOdontopediatria(firestore) { fetchedOdontopediatria ->
                 odontopediatriaList = fetchedOdontopediatria.sortedBy { it.name }
             }
 
+            // Cargar procedimientos
             fetchProcedures(firestore) { fetchedProcedures ->
                 allProcedureList = fetchedProcedures
-                searchResults = filterProcedureList(query, allProcedureList, searchOption)
+            }
+
+            // Cargar diagnósticos y llenar el mapa
+            fetchDiagnoses(firestore) { fetchedDiagnoses ->
+                // Nota: Aquí aseguramos que diagnosisMap sea un Map<String, List<Diagnosis>>
+                diagnosisMap = fetchedDiagnoses.groupBy { it.area }
             }
         }
 
@@ -354,14 +395,14 @@ class MainActivity : ComponentActivity() {
                                 searchOption = "CIE-10 Procedimiento"
                                 expanded = false
                             }, text = { Text("CIE-10 Procedimiento") })
-//                            DropdownMenuItem(onClick = {
-//                                searchOption = "Diagnóstico"
-//                                expanded = false
-//                            }, text = { Text("Diagnóstico") })
-//                            DropdownMenuItem(onClick = {
-//                                searchOption = "CIE-10 Diagnóstico"
-//                                expanded = false
-//                            }, text = { Text("CIE-10 Diagnóstico") })
+                            DropdownMenuItem(onClick = {
+                                searchOption = "Diagnóstico"
+                                expanded = false
+                            }, text = { Text("Diagnóstico") })
+                            DropdownMenuItem(onClick = {
+                                searchOption = "CIE-10 Diagnóstico"
+                                expanded = false
+                            }, text = { Text("CIE-10 Diagnóstico") })
                         }
                     }
                 }
@@ -371,28 +412,36 @@ class MainActivity : ComponentActivity() {
                     query = query,
                     searchResults = searchResults,
                     onQueryChange = { newQuery ->
-                        query = newQuery
-                        searchResults = filterProcedureList(query, allProcedureList, searchOption)
+                        query = newQuery // Solo actualiza el texto del query, sin hacer búsqueda aquí
                     },
                     onSearch = {
                         if (query.isNotBlank()) {
-                            searchResults = filterProcedureList(query, allProcedureList, searchOption)
-                            isDropdownExpanded = searchResults.isNotEmpty()
-                            selectedProcedure = null
+                            // Actualizar los resultados al hacer clic en buscar
+                            searchResults = filterProcedureList(
+                                query = query,
+                                procedureList = allProcedureList,
+                                searchOption = searchOption,
+                                diagnosisMap = diagnosisMap.flatMap { it.value }.associateBy { it.id }, // Un mapa de diagnósticos
+                                areaMap = areaMap
+                            )
+                            isDropdownExpanded = searchResults.isNotEmpty() // Mostrar el dropdown si hay resultados
                         } else {
-                            searchResults = emptyList()
+                            searchResults = emptyList() // Si el query está vacío, no hay resultados
                             isDropdownExpanded = false
                         }
                     },
                     onResultSelected = { procedure ->
-                        selectedProcedure = procedure
-                        isDropdownExpanded = false
+                        selectedProcedure = procedure // Asigna el procedimiento seleccionado
+                        isDropdownExpanded = false // Cierra el dropdown
                     },
-                    isDropdownExpanded = isDropdownExpanded,
-                    onDismissDropdown = { isDropdownExpanded = false },
-                    focusRequester = focusRequester,
-                    keyboardController = keyboardController
+                    isDropdownExpanded = isDropdownExpanded, // Estado del dropdown
+                    onDismissDropdown = { isDropdownExpanded = false }, // Cierra el dropdown
+                    focusRequester = focusRequester, // Manejo del enfoque
+                    keyboardController = keyboardController // Control del teclado
                 )
+
+
+
 
                 // Mostrar el procedimiento seleccionado si hay uno
                 selectedProcedure?.let { procedure ->
@@ -443,7 +492,7 @@ class MainActivity : ComponentActivity() {
                                                 put(sinAgruparDiagnosis.id, ungroupedProcedures)
                                             }
 
-                                            // Asegurarse de que se expande manualmente, sin que se cierre después
+                                            // Asegurarse de que se expanda manualmente, sin que se cierre después
                                             expandedDiagnosis = expandedDiagnosis.toMutableMap().apply {
                                                 put(sinAgruparDiagnosis.id, true)  // Asegurar que se expande al cargar correctamente
                                             }
@@ -586,9 +635,6 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-
-
-
             }
         }
     }
@@ -617,6 +663,24 @@ class MainActivity : ComponentActivity() {
                 onResult(emptyList())
             }
     }
+
+    // Función para cargar los diagnósticos desde Firestore
+    fun fetchDiagnoses(
+        firestore: FirebaseFirestore,
+        onResult: (List<Diagnosis>) -> Unit
+    ) {
+        firestore.collection("diagnosis")
+            .get()
+            .addOnSuccessListener { documents ->
+                val diagnosisList = documents.map { it.toObject(Diagnosis::class.java) }
+                onResult(diagnosisList)
+            }
+            .addOnFailureListener {
+                onResult(emptyList())
+            }
+    }
+
+
 
     fun fetchProcedures(firestore: FirebaseFirestore, onResult: (List<Procedure>) -> Unit) {
         firestore.collection("procedures")
@@ -671,95 +735,84 @@ class MainActivity : ComponentActivity() {
 }
 
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SearchBarWithDropdown(
+    query: String,
+    searchResults: List<Procedure>,
+    onQueryChange: (String) -> Unit,
+    onSearch: () -> Unit,
+    onResultSelected: (Procedure) -> Unit,
+    isDropdownExpanded: Boolean,
+    onDismissDropdown: () -> Unit,
+    focusRequester: FocusRequester,
+    keyboardController: SoftwareKeyboardController?
+) {
+    val maxHeight = 200.dp
+    val isLightTheme = !isSystemInDarkTheme()
 
+    Column {
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            label = { Text("Buscador") },
+            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
+                .padding(8.dp)
+                .focusRequester(focusRequester)
+                .onFocusChanged { focusState ->
+                    if (focusState.isFocused) {
+                        keyboardController?.show()
+                    }
+                },
+            singleLine = true,
+            textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface),
+            keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(
+                onSearch = {
+                    onSearch()
+                    keyboardController?.hide()
+                }
+            )
+        )
 
-
-    // Componente de barra de búsqueda con menú desplegable
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    fun SearchBarWithDropdown(
-        query: String,
-        searchResults: List<Procedure>,
-        onQueryChange: (String) -> Unit,
-        onSearch: () -> Unit,
-        onResultSelected: (Procedure) -> Unit,
-        isDropdownExpanded: Boolean,
-        onDismissDropdown: () -> Unit,
-        focusRequester: FocusRequester,
-        keyboardController: SoftwareKeyboardController?
-    ) {
-        // Definir una altura máxima para el menú desplegable
-        val maxHeight = 200.dp
-
-        // Determinar si el tema es claro u oscuro
-        val isLightTheme = !isSystemInDarkTheme()
-
-        Column {
-            OutlinedTextField(
-                value = query,
-                onValueChange = onQueryChange,
-                label = { Text("Buscador") },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
-                    .padding(8.dp)
-                    .focusRequester(focusRequester)
-                    .onFocusChanged { focusState ->
-                        if (focusState.isFocused) {
-                            keyboardController?.show() // Mostrar el teclado si el campo está enfocado
-                        }
+        DropdownMenu(
+            expanded = isDropdownExpanded,
+            onDismissRequest = {
+                onDismissDropdown()
+                focusRequester.requestFocus()
+                keyboardController?.show()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = maxHeight)
+        ) {
+            searchResults.forEach { result ->
+                DropdownMenuItem(
+                    onClick = {
+                        onResultSelected(result)
+                        focusRequester.requestFocus()
+                        keyboardController?.show()
                     },
-                singleLine = true,
-                textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface),
-                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(
-                    onSearch = {
-                        onSearch()
-                        keyboardController?.hide() // Esconder el teclado después de buscar
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            if (isLightTheme) Color(0xFFE0F7FA) else Color(0xFF000B33)
+                        ),
+                    text = {
+                        Column {
+                            Text(result.cie10procedure, style = MaterialTheme.typography.bodyMedium)
+                            Text(result.procedure, style = MaterialTheme.typography.bodySmall)
+                        }
                     }
                 )
-            )
-
-            // Lista desplegable de resultados de búsqueda con altura limitada
-            DropdownMenu(
-                expanded = isDropdownExpanded,
-                onDismissRequest = {
-                    onDismissDropdown()
-                    focusRequester.requestFocus()
-                    keyboardController?.show()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = maxHeight)
-            ) {
-                searchResults.forEach { result ->
-                    DropdownMenuItem(
-                        onClick = {
-                            onResultSelected(result)
-                            focusRequester.requestFocus()
-                            keyboardController?.show()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                if (isLightTheme) Color(0xFFE0F7FA) // Lila suave para tema claro
-                                else Color(0xFF000B33)              // Morado profundo para tema oscuro
-                            ),
-                        text = {
-                            Column {
-                                Text(result.cie10procedure, style = MaterialTheme.typography.bodyMedium)
-                                Text(result.procedure, style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                    )
-                }
             }
         }
     }
+}
 
-
-// Componente para cada fila de área
 @Composable
 fun AreaRow(area: Area, onAreaSelected: (Area) -> Unit) {
     Button(
@@ -773,6 +826,7 @@ fun AreaRow(area: Area, onAreaSelected: (Area) -> Unit) {
         Text(area.name, style = MaterialTheme.typography.bodyLarge)
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiagnosisRow(
@@ -781,17 +835,13 @@ fun DiagnosisRow(
     onExpandClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Detectar si el sistema está usando el tema oscuro o claro
     val isLightTheme = !isSystemInDarkTheme()
 
-// Definir los colores personalizados para DiagnosisRow según el tema claro u oscuro
     val backgroundColor = if (isLightTheme) {
-        Color(0xFFE1BEE7)  // Morado claro para tema claro
+        Color(0xFFE1BEE7)
     } else {
-        Color(0xFF4A148C)  // Azul oscuro para tema oscuro
+        Color(0xFF4A148C)
     }
-
-
 
     Surface(
         modifier = modifier
@@ -799,7 +849,7 @@ fun DiagnosisRow(
             .padding(8.dp),
         shape = RoundedCornerShape(12.dp),
         tonalElevation = 4.dp,
-        color = backgroundColor  // Usar el color personalizado
+        color = backgroundColor
     ) {
         Row(
             modifier = Modifier
@@ -822,10 +872,6 @@ fun DiagnosisRow(
     }
 }
 
-
-
-
-// Componente para cada fila de procedimiento (con animación)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimatedProcedureRow(
@@ -839,7 +885,6 @@ fun AnimatedProcedureRow(
     val userId = FirebaseAuth.getInstance().currentUser?.uid
     val firestore = FirebaseFirestore.getInstance()
 
-    // Verificar si el procedimiento es favorito al cargar la vista
     LaunchedEffect(procedure.id) {
         if (userId != null) {
             firestore.collection("userFavorites")
@@ -852,7 +897,6 @@ fun AnimatedProcedureRow(
         }
     }
 
-    // Verificar el estado de favoritos constantemente
     LaunchedEffect(Unit) {
         if (userId != null) {
             firestore.collection("userFavorites")
@@ -879,32 +923,27 @@ fun AnimatedProcedureRow(
 
         favoritesRef.get().addOnSuccessListener { documentSnapshot ->
             if (documentSnapshot.exists()) {
-                // Obtener la lista actual de favoritos
                 val favorite = documentSnapshot.toObject(Favorite::class.java)
                 val updatedProcedureIds = favorite?.procedureIds?.toMutableList() ?: mutableListOf()
 
                 if (isFavorite) {
-                    // Si ya es favorito, lo eliminamos de la lista
                     updatedProcedureIds.remove(procedureId)
                 } else {
-                    // Si no es favorito, lo añadimos a la lista
                     updatedProcedureIds.add(procedureId)
                 }
 
-                // Actualizar la lista de IDs en Firestore
                 favoritesRef.update("procedureIds", updatedProcedureIds)
                     .addOnSuccessListener {
-                        onSuccess(!isFavorite) // Cambia el estado de favorito
+                        onSuccess(!isFavorite)
                     }
                     .addOnFailureListener { e ->
                         Log.e("toggleFavorite", "Error al actualizar favoritos", e)
                     }
             } else {
-                // Si el documento no existe, creamos uno nuevo con este procedimiento como favorito
                 val newFavorite = Favorite(procedureIds = listOf(procedureId))
                 favoritesRef.set(newFavorite)
                     .addOnSuccessListener {
-                        onSuccess(true) // El procedimiento ahora es favorito
+                        onSuccess(true)
                     }
                     .addOnFailureListener { e ->
                         Log.e("toggleFavorite", "Error al añadir nuevo favorito", e)
@@ -915,7 +954,6 @@ fun AnimatedProcedureRow(
         }
     }
 
-    // Función para actualizar el estado de favoritos en Firestore
     fun toggleFavoriteStatus() {
         if (userId == null) return
 
@@ -951,7 +989,6 @@ fun AnimatedProcedureRow(
                     style = MaterialTheme.typography.bodyLarge
                 )
 
-                // Icono de corazón para marcar/desmarcar como favorito
                 IconButton(onClick = { toggleFavoriteStatus() }) {
                     Icon(
                         painter = if (isFavorite) painterResource(id = R.drawable.ic_favorite) else painterResource(
@@ -965,7 +1002,6 @@ fun AnimatedProcedureRow(
 
             AnimatedVisibility(visible = expanded) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    // Detalles adicionales del procedimiento
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -981,8 +1017,6 @@ fun AnimatedProcedureRow(
     }
 }
 
-// Detalle del procedimiento
-// Detalle del procedimiento
 @Composable
 fun ProcedureDetail(
     mainViewModel: MainViewModel,
@@ -993,9 +1027,8 @@ fun ProcedureDetail(
     var isFavorite by remember { mutableStateOf(false) }
     var areaName by remember { mutableStateOf("Cargando...") }
     var diagnosisName by remember { mutableStateOf("Cargando...") }
-    var diagnosisCIE10 by remember { mutableStateOf("Cargando...") }  // Nueva variable para CIE-10 del diagnóstico
+    var diagnosisCIE10 by remember { mutableStateOf("Cargando...") }
 
-    // Verificar si el procedimiento es favorito al cargar
     LaunchedEffect(procedure.id) {
         val userId = FirebaseAuth.getInstance().currentUser?.uid
         if (userId != null) {
@@ -1009,7 +1042,6 @@ fun ProcedureDetail(
         }
     }
 
-    // Cargar el nombre del área considerando áreas normales y odontopediatría
     LaunchedEffect(procedure.area) {
         firestore.collection("areas")
             .document(procedure.area)
@@ -1019,7 +1051,6 @@ fun ProcedureDetail(
                 if (area != null) {
                     areaName = area.name
                 } else {
-                    // Si no se encuentra en áreas normales, buscar en áreas de odontopediatría
                     firestore.collection("areasodontopediatria")
                         .document(procedure.area)
                         .get()
@@ -1031,7 +1062,6 @@ fun ProcedureDetail(
             }
     }
 
-    // Cargar el nombre del diagnóstico considerando diagnósticos normales y de odontopediatría
     LaunchedEffect(procedure.diagnosis) {
         firestore.collection("diagnosis")
             .document(procedure.diagnosis)
@@ -1040,22 +1070,20 @@ fun ProcedureDetail(
                 val diagnosis = document.toObject(Diagnosis::class.java)
                 if (diagnosis != null) {
                     diagnosisName = diagnosis.name
-                    diagnosisCIE10 = diagnosis.cie10diagnosis // Asignar el CIE-10 del diagnóstico
+                    diagnosisCIE10 = diagnosis.cie10diagnosis
                 } else {
-                    // Si no se encuentra en diagnósticos normales, buscar en diagnósticos de odontopediatría
                     firestore.collection("diagnosisodontopediatria")
                         .document(procedure.diagnosis)
                         .get()
                         .addOnSuccessListener { odontopediatriaDocument ->
                             val odontopediatriaDiagnosis = odontopediatriaDocument.toObject(Diagnosis::class.java)
                             diagnosisName = odontopediatriaDiagnosis?.name ?: "Diagnóstico no encontrado"
-                            diagnosisCIE10 = odontopediatriaDiagnosis?.cie10diagnosis ?: "CIE-10 no encontrado" // Asignar el CIE-10 del diagnóstico
+                            diagnosisCIE10 = odontopediatriaDiagnosis?.cie10diagnosis ?: "CIE-10 no encontrado"
                         }
                 }
             }
     }
 
-    // UI de la pantalla de detalle
     Surface(modifier = Modifier.padding(16.dp), shape = RoundedCornerShape(12.dp), tonalElevation = 4.dp) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -1068,16 +1096,14 @@ fun ProcedureDetail(
             Divider()
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Mostrar los detalles del procedimiento
             Text(text = "Procedimiento: ${procedure.procedure}", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
-            Text(text = "Diagnóstico: $diagnosisName", style = MaterialTheme.typography.bodyMedium)  // Mostramos el nombre del diagnóstico
-            Text(text = "Codigo de Diagnóstico: $diagnosisCIE10", style = MaterialTheme.typography.bodyMedium)  // Mostramos el CIE-10 del diagnóstico
-            Text(text = "Área: $areaName", style = MaterialTheme.typography.bodyMedium)  // Mostramos el nombre del área
+            Text(text = "Diagnóstico: $diagnosisName", style = MaterialTheme.typography.bodyMedium)
+            Text(text = "Codigo de Diagnóstico: $diagnosisCIE10", style = MaterialTheme.typography.bodyMedium)
+            Text(text = "Área: $areaName", style = MaterialTheme.typography.bodyMedium)
 
-            // Mostrar el corazón para marcar como favorito
             IconButton(onClick = {
                 mainViewModel.toggleFavorite(procedure.id)
-                isFavorite = !isFavorite // Cambia el estado localmente
+                isFavorite = !isFavorite
             }) {
                 Icon(
                     painter = if (isFavorite) painterResource(id = R.drawable.ic_favorite) else painterResource(id = R.drawable.ic_favorite_border),
@@ -1089,18 +1115,15 @@ fun ProcedureDetail(
     }
 }
 
-
-
-// Implementar funciones fetchAreas y fetchProceduresByArea
 fun fetchAreas(firestore: FirebaseFirestore, onResult: (List<Area>) -> Unit) {
     firestore.collection("areas")
         .get()
         .addOnSuccessListener { documents ->
             val areasList = documents.map { it.toObject(Area::class.java) }
-            onResult(areasList) // Devolver la lista de áreas normales
+            onResult(areasList)
         }
         .addOnFailureListener {
-            onResult(emptyList()) // Si falla, devolver una lista vacía
+            onResult(emptyList())
         }
 }
 
@@ -1110,14 +1133,14 @@ fun fetchProceduresByArea(
     onResult: (List<Procedure>) -> Unit
 ) {
     firestore.collection("procedures")
-        .whereEqualTo("area", areaId) // Usamos el ID del área para buscar los procedimientos
+        .whereEqualTo("area", areaId)
         .get()
         .addOnSuccessListener { documents ->
             val procedureList = documents.map { it.toObject(Procedure::class.java) }
             onResult(procedureList)
         }
         .addOnFailureListener {
-            onResult(emptyList()) // Devolvemos una lista vacía si ocurre un error
+            onResult(emptyList())
         }
 }
 
@@ -1126,10 +1149,9 @@ fun fetchAreasOdontopediatria(firestore: FirebaseFirestore, onResult: (List<Area
         .get()
         .addOnSuccessListener { documents ->
             val odontopediatriaList = documents.map { it.toObject(Area::class.java) }
-            onResult(odontopediatriaList) // Devolver la lista de áreas de odontopediatría
+            onResult(odontopediatriaList)
         }
         .addOnFailureListener {
-            onResult(emptyList()) // Si falla, devolver una lista vacía
+            onResult(emptyList())
         }
 }
-
