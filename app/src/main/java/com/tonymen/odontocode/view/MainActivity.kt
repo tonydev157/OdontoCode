@@ -195,8 +195,8 @@ class MainActivity : ComponentActivity() {
         query: String,
         procedureList: List<Procedure>,
         searchOption: String,
-        diagnosisMap: Map<String, Diagnosis>, // Mapa de diagnósticos (ID a Diagnosis)
-        areaMap: Map<String, Area> // Mapa de áreas (ID a Area)
+        diagnosisMap: Map<String, Diagnosis>, // Mapa de diagnósticos combinado
+        areaMap: Map<String, Area> // Mapa de áreas
     ): List<Procedure> {
         val normalizedQuery = normalizeString(query)
 
@@ -205,7 +205,7 @@ class MainActivity : ComponentActivity() {
                 // Buscar IDs de diagnósticos que coinciden con el nombre
                 val matchingDiagnosisIds = diagnosisMap.filter { (_, diagnosis) ->
                     normalizeString(diagnosis.name).contains(normalizedQuery, ignoreCase = true)
-                }.keys.toSet() // Usamos un Set para facilitar la búsqueda
+                }.keys.toSet()
 
                 // Filtrar procedimientos cuyos diagnósticos están en matchingDiagnosisIds
                 procedureList.filter { matchingDiagnosisIds.contains(it.diagnosis) }
@@ -235,13 +235,14 @@ class MainActivity : ComponentActivity() {
                 // Filtrar procedimientos por área
                 val matchingAreaIds = areaMap.filter { (_, area) ->
                     normalizeString(area.name).contains(normalizedQuery, ignoreCase = true)
-                }.keys.toSet() // Extraer IDs de áreas que coinciden
+                }.keys.toSet()
 
-                procedureList.filter { matchingAreaIds.contains(it.area) } // Filtrar procedimientos que pertenecen a esas áreas
+                procedureList.filter { matchingAreaIds.contains(it.area) }
             }
-            else -> emptyList() // Retornar lista vacía si el tipo de búsqueda no es válido
+            else -> emptyList()
         }
     }
+
 
     // Función para normalizar cadenas, eliminando tildes y convirtiendo a minúsculas
     fun normalizeString(input: String): String {
@@ -298,10 +299,11 @@ class MainActivity : ComponentActivity() {
 
             // Cargar diagnósticos y llenar el mapa
             fetchDiagnoses(firestore) { fetchedDiagnoses ->
-                // Nota: Aquí aseguramos que diagnosisMap sea un Map<String, List<Diagnosis>>
+                // Combina diagnósticos de ambas colecciones
                 diagnosisMap = fetchedDiagnoses.groupBy { it.area }
             }
         }
+
 
         Scaffold(
             topBar = {
@@ -408,6 +410,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 // Buscador de procedimientos con lista desplegable
+// Buscador de procedimientos con lista desplegable
                 SearchBarWithDropdown(
                     query = query,
                     searchResults = searchResults,
@@ -416,12 +419,15 @@ class MainActivity : ComponentActivity() {
                     },
                     onSearch = {
                         if (query.isNotBlank()) {
+                            // Crear un mapa combinado de diagnósticos
+                            val combinedDiagnosisMap = diagnosisMap.flatMap { it.value }.associateBy { it.id }
+
                             // Actualizar los resultados al hacer clic en buscar
                             searchResults = filterProcedureList(
                                 query = query,
                                 procedureList = allProcedureList,
                                 searchOption = searchOption,
-                                diagnosisMap = diagnosisMap.flatMap { it.value }.associateBy { it.id }, // Un mapa de diagnósticos
+                                diagnosisMap = combinedDiagnosisMap, // Usa el mapa combinado
                                 areaMap = areaMap
                             )
                             isDropdownExpanded = searchResults.isNotEmpty() // Mostrar el dropdown si hay resultados
@@ -439,6 +445,7 @@ class MainActivity : ComponentActivity() {
                     focusRequester = focusRequester, // Manejo del enfoque
                     keyboardController = keyboardController // Control del teclado
                 )
+
 
 
 
@@ -665,20 +672,28 @@ class MainActivity : ComponentActivity() {
     }
 
     // Función para cargar los diagnósticos desde Firestore
-    fun fetchDiagnoses(
-        firestore: FirebaseFirestore,
-        onResult: (List<Diagnosis>) -> Unit
-    ) {
+    fun fetchDiagnoses(firestore: FirebaseFirestore, onResult: (List<Diagnosis>) -> Unit) {
+        val diagnoses = mutableListOf<Diagnosis>()
+
+        // Cargar diagnósticos de la primera colección
         firestore.collection("diagnosis")
             .get()
             .addOnSuccessListener { documents ->
-                val diagnosisList = documents.map { it.toObject(Diagnosis::class.java) }
-                onResult(diagnosisList)
+                diagnoses.addAll(documents.map { it.toObject(Diagnosis::class.java) })
+
+                // Cargar diagnósticos de la segunda colección
+                firestore.collection("diagnosisodontopediatria")
+                    .get()
+                    .addOnSuccessListener { documents2 ->
+                        diagnoses.addAll(documents2.map { it.toObject(Diagnosis::class.java) })
+                        onResult(diagnoses) // Retornar todos los diagnósticos
+                    }
             }
             .addOnFailureListener {
                 onResult(emptyList())
             }
     }
+
 
 
 
