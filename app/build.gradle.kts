@@ -96,6 +96,7 @@ dependencies {
     implementation(libs.androidx.foundation.android)
     implementation(libs.androidx.runner)
     implementation(libs.androidx.espresso.core)
+    implementation(libs.androidx.lifecycle.runtime.compose.android)
 
     // Testing dependencies
     testImplementation(libs.junit)

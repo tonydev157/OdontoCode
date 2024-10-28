@@ -54,6 +54,7 @@ uiToolingPreviewVersion = "1.7.4"
 uiVersion = "1.7.4"
 foundationAndroid = "1.6.6"
 runner = "1.6.1"
+lifecycleRuntimeComposeAndroid = "2.8.6"
 
 [libraries]
 androidx-activity-compose-v170 = { module = "androidx.activity:activity-compose", version.ref = "androidxActivityCompose" }
@@ -123,6 +124,7 @@ generativeai = { group = "com.google.ai.client.generativeai", name = "generative
 androidx-ui-test-android = { group = "androidx.compose.ui", name = "ui-test-android", version.ref = "uiTestAndroid" }
 androidx-foundation-android = { group = "androidx.compose.foundation", name = "foundation-android", version.ref = "foundationAndroid" }
 androidx-runner = { group = "androidx.test", name = "runner", version.ref = "runner" }
+androidx-lifecycle-runtime-compose-android = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose-android", version.ref = "lifecycleRuntimeComposeAndroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
