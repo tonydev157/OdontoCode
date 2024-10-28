@@ -46,6 +46,7 @@ import com.tonymen.odontocode.data.*
 import com.tonymen.odontocode.ui.theme.OdontoCodeTheme
 import com.tonymen.odontocode.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.LocalFocusManager
 
 class MainActivity : ComponentActivity() {
     private val mainViewModel: MainViewModel by viewModels()
@@ -116,7 +117,6 @@ class MainActivity : ComponentActivity() {
             }
     }
 
-
     private fun showInvalidSessionDialog() {
         MaterialAlertDialogBuilder(this)
             .setTitle("Sesión inválida")
@@ -127,7 +127,6 @@ class MainActivity : ComponentActivity() {
             .setCancelable(false)
             .show()
     }
-
 
     private fun setMainContent() {
         setContent {
@@ -142,7 +141,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
 
     private fun cerrarSesionDesdeSettings(userId: String) {
         firestore.collection("users").document(userId)
@@ -212,19 +210,17 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(mainViewModel: MainViewModel, isAdmin: Boolean, onLogoutClick: () -> Unit) {
-    var query by remember { mutableStateOf("") }
     val areaList by mainViewModel.areas.collectAsStateWithLifecycle()
     val odontopediatriaList by mainViewModel.odontopediatriaAreas.collectAsStateWithLifecycle()
-    val combinedAreaList = areaList + odontopediatriaList // Lista combinada para el buscador
+    val combinedAreaList = areaList + odontopediatriaList
     val searchResults by mainViewModel.searchResults.collectAsStateWithLifecycle()
     val searchCriteria by mainViewModel.searchCriteria.collectAsStateWithLifecycle()
     val selectedProcedure by mainViewModel.selectedProcedure.collectAsStateWithLifecycle()
-    val expandedArea by mainViewModel.expandedAreas.collectAsStateWithLifecycle()
-    val expandedDiagnosis by mainViewModel.expandedDiagnoses.collectAsStateWithLifecycle()
+    val expandedArea by mainViewModel.expandedArea.collectAsStateWithLifecycle()
+    val expandedDiagnosis by mainViewModel.expandedDiagnosis.collectAsStateWithLifecycle()
     val diagnoses by mainViewModel.diagnoses.collectAsStateWithLifecycle()
     val procedures by mainViewModel.procedures.collectAsStateWithLifecycle()
 
@@ -248,7 +244,7 @@ fun SearchScreen(mainViewModel: MainViewModel, isAdmin: Boolean, onLogoutClick: 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .clickable { focusManager.clearFocus() } // Esto ayudará a liberar el foco al hacer clic fuera de la caja
+            .clickable { focusManager.clearFocus() }
     ) {
         Scaffold(
             topBar = {
@@ -326,276 +322,372 @@ fun SearchScreen(mainViewModel: MainViewModel, isAdmin: Boolean, onLogoutClick: 
                     .padding(innerPadding)
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
-                    .clickable { focusManager.clearFocus() } // Asegurar que se pueda liberar el foco al hacer clic fuera
+                    .clickable { focusManager.clearFocus() }
             ) {
-                // Barra desplegable para seleccionar el tipo de búsqueda
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Buscar por: ", style = MaterialTheme.typography.titleMedium)
-
-                    var expanded by remember { mutableStateOf(false) }
-                    Box {
-                        Button(onClick = { expanded = true }) {
-                            Text(searchCriteria) // Muestra el criterio de búsqueda actual
-                        }
-                        DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
-                        ) {
-                            listOf(
-                                "Área",
-                                "Procedimiento",
-                                "CIE-10 Procedimiento",
-                                "Diagnóstico",
-                                "CIE-10 Diagnóstico"
-                            ).forEach { criteria ->
-                                DropdownMenuItem(
-                                    onClick = {
-                                        mainViewModel.updateSearchCriteria(criteria) // Actualiza el criterio de búsqueda en el ViewModel
-                                        expanded = false
-                                        mainViewModel.saveSearchOption(context, criteria) // Guarda la opción seleccionada para persistirla
-                                    },
-                                    text = { Text(criteria) }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                var isDropdownExpanded by remember { mutableStateOf(false) }
-
-                SearchBarWithDropdown(
-                    query = query,
-                    searchResults = searchResults,
-                    onQueryChange = { newQuery ->
-                        query = newQuery
-                    },
-                    onSearch = {
-                        if (query.isNotBlank()) {
-                            mainViewModel.searchProcedures(query, searchCriteria)
-                            isDropdownExpanded = true // Expandir el menú después de realizar una búsqueda
-                        } else {
-                            mainViewModel.clearSearchResults()
-                        }
-                        focusManager.clearFocus()
-                        keyboardController?.hide()
-                    },
-                    onResultSelected = { procedure ->
-                        mainViewModel.selectProcedure(procedure)
-                        focusManager.clearFocus()
-                        keyboardController?.hide()
-                        isDropdownExpanded = false // Cerrar el menú después de seleccionar un resultado
-                    },
-                    isDropdownExpanded = isDropdownExpanded,
-                    onDismissDropdown = {
-                        isDropdownExpanded = false // Actualizar el estado para cerrar el menú
-                    },
-                    focusRequester = focusRequester,
-                    keyboardController = keyboardController,
-                    areaMap = combinedAreaList.associateBy { it.id }
+                SearchDropdown(
+                    mainViewModel = mainViewModel,
+                    searchCriteria = searchCriteria
                 )
 
-                // Mostrar el detalle del procedimiento seleccionado
+                // Se eliminó `focusManager` como parámetro
+                SearchBarWithDropdown(
+                    mainViewModel = mainViewModel,
+                    keyboardController = keyboardController,
+                    focusRequester = focusRequester,
+                    combinedAreaList = combinedAreaList
+                )
+
                 selectedProcedure?.let { procedure ->
                     ProcedureDetail(
                         mainViewModel = mainViewModel,
                         procedure = procedure,
                         onDismiss = {
                             mainViewModel.clearSelectedProcedure()
-                            focusManager.clearFocus() // Limpiar el foco cuando se cierra el detalle
-                            keyboardController?.hide() // Ocultar el teclado cuando se cierra el detalle
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
                         }
                     )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Mostrar áreas y diagnósticos
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background)
-                        .clickable { focusManager.clearFocus() } // Asegurar que se pueda liberar el foco al hacer clic fuera
-                ) {
-                    // Título para las áreas generales
-                    item {
-                        Text(
-                            text = "Áreas Generales",
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(16.dp)
-                        )
+                AreaDiagnosisList(
+                    areaList = areaList,
+                    odontopediatriaList = odontopediatriaList,
+                    expandedArea = expandedArea,
+                    expandedDiagnosis = expandedDiagnosis,
+                    diagnoses = diagnoses,
+                    procedures = procedures,
+                    mainViewModel = mainViewModel
+                )
+            }
+        }
+    }
+}
+
+
+
+@Composable
+fun SearchDropdown(
+    mainViewModel: MainViewModel,
+    searchCriteria: String
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text("Buscar por: ", style = MaterialTheme.typography.titleMedium)
+
+        Box {
+            Button(onClick = { expanded = true }) {
+                Text(searchCriteria)
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                listOf(
+                    "Área",
+                    "Procedimiento",
+                    "CIE-10 Procedimiento",
+                    "Diagnóstico",
+                    "CIE-10 Diagnóstico"
+                ).forEach { criteria ->
+                    DropdownMenuItem(
+                        onClick = {
+                            mainViewModel.updateSearchCriteria(criteria)
+                            expanded = false
+                            mainViewModel.saveSearchOption(context, criteria)
+                        },
+                        text = { Text(criteria) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+fun SearchBarWithDropdown(
+    mainViewModel: MainViewModel,
+    keyboardController: SoftwareKeyboardController?,
+    focusRequester: FocusRequester,
+    combinedAreaList: List<Area>
+) {
+    var query by remember { mutableStateOf("") }
+    val searchResults by mainViewModel.searchResults.collectAsStateWithLifecycle()
+    val searchCriteria by mainViewModel.searchCriteria.collectAsStateWithLifecycle()
+    var isDropdownExpanded by remember { mutableStateOf(false) }
+
+    // Obtener LocalFocusManager aquí
+    val focusManager = LocalFocusManager.current
+
+    Column {
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            label = { Text("Buscador") },
+            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+                .onFocusChanged { focusState ->
+                    if (!focusState.isFocused) {
+                        keyboardController?.hide()
                     }
+                },
+            singleLine = true,
+            textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface),
+            keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(
+                onSearch = {
+                    if (query.isNotBlank()) {
+                        mainViewModel.searchProcedures(query) // Corregido: Se eliminó searchCriteria
+                        isDropdownExpanded = true
+                    } else {
+                        mainViewModel.clearSearchResults() // Asegúrate de haber añadido esta función al MainViewModel
+                    }
+                    focusManager.clearFocus()
+                    keyboardController?.hide()
+                }
+            )
+        )
 
-                    // Mostrar las áreas generales
-                    items(areaList, key = { it.id }) { area ->
-                        Column {
-                            AreaRow(area = area, onAreaSelected = {
-                                mainViewModel.toggleAreaExpansion(area.id)
-                                mainViewModel.collapseAllDiagnoses()
-                                if (expandedArea != area.id) {
-                                    mainViewModel.fetchDiagnosesByArea(area.id)
-                                }
-                            })
-
-                            if (expandedArea == area.id) {
-                                diagnoses.filter { it.area == area.id }.forEach { diagnosisItem ->
-                                    DiagnosisRow(
-                                        diagnosis = diagnosisItem,
-                                        isExpanded = expandedDiagnosis == diagnosisItem.id,
-                                        onExpandClick = {
-                                            mainViewModel.toggleDiagnosisExpansion(diagnosisItem.id)
-                                            if (expandedDiagnosis != diagnosisItem.id) {
-                                                mainViewModel.fetchProceduresByDiagnosis(diagnosisItem.id)
-                                            }
-                                        }
-                                    )
-
-                                    if (expandedDiagnosis == diagnosisItem.id) {
-                                        procedures.filter { it.diagnosis == diagnosisItem.id }.forEach { procedureItem ->
-                                            AnimatedProcedureRow(
-                                                procedure = procedureItem,
-                                                onProcedureSelected = {
-                                                    mainViewModel.selectProcedure(procedureItem)
-                                                },
-                                                onMoreSelected = {
-                                                    mainViewModel.selectProcedure(procedureItem)
-                                                },
-                                                onToggleFavorite = { procedureId ->
-                                                    mainViewModel.toggleFavorite(procedureId)
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-
-                                // Agregar los procedimientos sin diagnóstico bajo "Sin Especificar"
-                                val proceduresWithoutDiagnosis = procedures.filter { it.diagnosis == "N/A" && it.area == area.id }
-                                if (proceduresWithoutDiagnosis.isNotEmpty()) {
-                                    val diagnosisId = "SinEspecificar_\${area.id}"
-                                    DiagnosisRow(
-                                        diagnosis = Diagnosis(
-                                            id = diagnosisId,
-                                            name = "Sin Especificar",
-                                            cie10diagnosis = "N/A",
-                                            area = area.id
-                                        ),
-                                        isExpanded = expandedDiagnosis == diagnosisId,
-                                        onExpandClick = {
-                                            mainViewModel.toggleDiagnosisExpansion(diagnosisId)
-                                        }
-                                    )
-
-                                    if (expandedDiagnosis == diagnosisId) {
-                                        proceduresWithoutDiagnosis.forEach { procedureItem ->
-                                            AnimatedProcedureRow(
-                                                procedure = procedureItem,
-                                                onProcedureSelected = {
-                                                    mainViewModel.selectProcedure(procedureItem)
-                                                },
-                                                onMoreSelected = {
-                                                    mainViewModel.selectProcedure(procedureItem)
-                                                },
-                                                onToggleFavorite = { procedureId ->
-                                                    mainViewModel.toggleFavorite(procedureId)
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
+        DropdownMenu(
+            expanded = isDropdownExpanded,
+            onDismissRequest = {
+                isDropdownExpanded = false
+                focusManager.clearFocus()
+                keyboardController?.hide()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 200.dp)
+        ) {
+            searchResults.forEach { result ->
+                DropdownMenuItem(
+                    onClick = {
+                        mainViewModel.selectProcedure(result)
+                        isDropdownExpanded = false
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                    },
+                    text = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(
+                                    result.cie10procedure,
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                                )
+                                Text(
+                                    result.procedure,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
                             }
+                            Text(
+                                combinedAreaList.associateBy { it.id }[result.area]?.name ?: "Área no disponible",
+                                style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
+                            )
                         }
                     }
+                )
+            }
+        }
+    }
+}
 
-                    // Título para las áreas de odontopediatría
-                    item {
-                        Text(
-                            text = "Odontopediatría",
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    }
 
-                    // Mostrar las áreas de odontopediatría
-                    items(odontopediatriaList, key = { it.id }) { area ->
-                        Column {
-                            AreaRow(area = area, onAreaSelected = {
-                                mainViewModel.toggleAreaExpansion(area.id)
-                                mainViewModel.collapseAllDiagnoses()
-                                if (expandedArea != area.id) {
-                                    mainViewModel.fetchDiagnosesByOdontopediatriaArea(area.id)
-                                }
-                            })
+@Composable
+fun AreaDiagnosisList(
+    areaList: List<Area>,
+    odontopediatriaList: List<Area>,
+    expandedArea: String?,
+    expandedDiagnosis: String?,
+    diagnoses: List<Diagnosis>,
+    procedures: List<Procedure>,
+    mainViewModel: MainViewModel
+) {
+    val focusManager = LocalFocusManager.current // <- Mueve aquí la llamada al FocusManager
 
-                            if (expandedArea == area.id) {
-                                diagnoses.filter { it.area == area.id }.forEach { diagnosisItem ->
-                                    DiagnosisRow(
-                                        diagnosis = diagnosisItem,
-                                        isExpanded = expandedDiagnosis == diagnosisItem.id,
-                                        onExpandClick = {
-                                            mainViewModel.toggleDiagnosisExpansion(diagnosisItem.id)
-                                            if (expandedDiagnosis != diagnosisItem.id) {
-                                                mainViewModel.fetchProceduresByDiagnosis(diagnosisItem.id)
-                                            }
-                                        }
-                                    )
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .clickable { focusManager.clearFocus() } // <- Usa la referencia aquí
+    ) {
+        item {
+            Text(
+                text = "Áreas Generales",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
 
-                                    if (expandedDiagnosis == diagnosisItem.id) {
-                                        procedures.filter { it.diagnosis == diagnosisItem.id }.forEach { procedureItem ->
-                                            AnimatedProcedureRow(
-                                                procedure = procedureItem,
-                                                onProcedureSelected = {
-                                                    mainViewModel.selectProcedure(procedureItem)
-                                                },
-                                                onMoreSelected = {
-                                                    mainViewModel.selectProcedure(procedureItem)
-                                                },
-                                                onToggleFavorite = { procedureId ->
-                                                    mainViewModel.toggleFavorite(procedureId)
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
+        items(areaList, key = { it.id }) { area ->
+            AreaRow(area = area, onAreaSelected = {
+                mainViewModel.toggleAreaExpansion(area.id)
+                mainViewModel.collapseAllDiagnoses()
+                if (expandedArea != area.id) {
+                    mainViewModel.fetchDiagnosesByArea(area.id)
+                }
+            })
 
-                                // Agregar los procedimientos sin diagnóstico bajo "Sin Especificar"
-                                val proceduresWithoutDiagnosis = procedures.filter { it.diagnosis == "N/A" && it.area == area.id }
-                                if (proceduresWithoutDiagnosis.isNotEmpty()) {
-                                    val diagnosisId = "SinEspecificar_\${area.id}"
-                                    DiagnosisRow(
-                                        diagnosis = Diagnosis(
-                                            id = diagnosisId,
-                                            name = "Sin Especificar",
-                                            cie10diagnosis = "N/A",
-                                            area = area.id
-                                        ),
-                                        isExpanded = expandedDiagnosis == diagnosisId,
-                                        onExpandClick = {
-                                            mainViewModel.toggleDiagnosisExpansion(diagnosisId)
-                                        }
-                                    )
-
-                                    if (expandedDiagnosis == diagnosisId) {
-                                        proceduresWithoutDiagnosis.forEach { procedureItem ->
-                                            AnimatedProcedureRow(
-                                                procedure = procedureItem,
-                                                onProcedureSelected = {
-                                                    mainViewModel.selectProcedure(procedureItem)
-                                                },
-                                                onMoreSelected = {
-                                                    mainViewModel.selectProcedure(procedureItem)
-                                                },
-                                                onToggleFavorite = { procedureId ->
-                                                    mainViewModel.toggleFavorite(procedureId)
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
+            if (expandedArea == area.id) {
+                diagnoses.filter { it.area == area.id }.forEach { diagnosisItem ->
+                    DiagnosisRow(
+                        diagnosis = diagnosisItem,
+                        isExpanded = expandedDiagnosis == diagnosisItem.id,
+                        onExpandClick = {
+                            mainViewModel.toggleDiagnosisExpansion(diagnosisItem.id)
+                            if (expandedDiagnosis != diagnosisItem.id) {
+                                mainViewModel.fetchProceduresByDiagnosis(diagnosisItem.id)
                             }
+                        }
+                    )
+
+                    if (expandedDiagnosis == diagnosisItem.id) {
+                        procedures.filter { it.diagnosis == diagnosisItem.id }.forEach { procedureItem ->
+                            AnimatedProcedureRow(
+                                procedure = procedureItem,
+                                onProcedureSelected = {
+                                    mainViewModel.selectProcedure(procedureItem)
+                                },
+                                onMoreSelected = {
+                                    mainViewModel.selectProcedure(procedureItem)
+                                },
+                                onToggleFavorite = { procedureId ->
+                                    mainViewModel.toggleFavorite(procedureId)
+                                }
+                            )
+                        }
+                    }
+                }
+
+                val proceduresWithoutDiagnosis = procedures.filter { it.diagnosis == "N/A" && it.area == area.id }
+                if (proceduresWithoutDiagnosis.isNotEmpty()) {
+                    val diagnosisId = "SinEspecificar_${area.id}"
+                    DiagnosisRow(
+                        diagnosis = Diagnosis(
+                            id = diagnosisId,
+                            name = "Sin Especificar",
+                            cie10diagnosis = "N/A",
+                            area = area.id
+                        ),
+                        isExpanded = expandedDiagnosis == diagnosisId,
+                        onExpandClick = {
+                            mainViewModel.toggleDiagnosisExpansion(diagnosisId)
+                        }
+                    )
+
+                    if (expandedDiagnosis == diagnosisId) {
+                        proceduresWithoutDiagnosis.forEach { procedureItem ->
+                            AnimatedProcedureRow(
+                                procedure = procedureItem,
+                                onProcedureSelected = {
+                                    mainViewModel.selectProcedure(procedureItem)
+                                },
+                                onMoreSelected = {
+                                    mainViewModel.selectProcedure(procedureItem)
+                                },
+                                onToggleFavorite = { procedureId ->
+                                    mainViewModel.toggleFavorite(procedureId)
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            Text(
+                text = "Odontopediatría",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+
+        items(odontopediatriaList, key = { it.id }) { area ->
+            AreaRow(area = area, onAreaSelected = {
+                mainViewModel.toggleAreaExpansion(area.id)
+                mainViewModel.collapseAllDiagnoses()
+                if (expandedArea != area.id) {
+                    mainViewModel.fetchDiagnosesByOdontopediatriaArea(area.id)
+                }
+            })
+
+            if (expandedArea == area.id) {
+                diagnoses.filter { it.area == area.id }.forEach { diagnosisItem ->
+                    DiagnosisRow(
+                        diagnosis = diagnosisItem,
+                        isExpanded = expandedDiagnosis == diagnosisItem.id,
+                        onExpandClick = {
+                            mainViewModel.toggleDiagnosisExpansion(diagnosisItem.id)
+                            if (expandedDiagnosis != diagnosisItem.id) {
+                                mainViewModel.fetchProceduresByDiagnosis(diagnosisItem.id)
+                            }
+                        }
+                    )
+
+                    if (expandedDiagnosis == diagnosisItem.id) {
+                        procedures.filter { it.diagnosis == diagnosisItem.id }.forEach { procedureItem ->
+                            AnimatedProcedureRow(
+                                procedure = procedureItem,
+                                onProcedureSelected = {
+                                    mainViewModel.selectProcedure(procedureItem)
+                                },
+                                onMoreSelected = {
+                                    mainViewModel.selectProcedure(procedureItem)
+                                },
+                                onToggleFavorite = { procedureId ->
+                                    mainViewModel.toggleFavorite(procedureId)
+                                }
+                            )
+                        }
+                    }
+                }
+
+                val proceduresWithoutDiagnosis = procedures.filter { it.diagnosis == "N/A" && it.area == area.id }
+                if (proceduresWithoutDiagnosis.isNotEmpty()) {
+                    val diagnosisId = "SinEspecificar_${area.id}"
+                    DiagnosisRow(
+                        diagnosis = Diagnosis(
+                            id = diagnosisId,
+                            name = "Sin Especificar",
+                            cie10diagnosis = "N/A",
+                            area = area.id
+                        ),
+                        isExpanded = expandedDiagnosis == diagnosisId,
+                        onExpandClick = {
+                            mainViewModel.toggleDiagnosisExpansion(diagnosisId)
+                        }
+                    )
+
+                    if (expandedDiagnosis == diagnosisId) {
+                        proceduresWithoutDiagnosis.forEach { procedureItem ->
+                            AnimatedProcedureRow(
+                                procedure = procedureItem,
+                                onProcedureSelected = {
+                                    mainViewModel.selectProcedure(procedureItem)
+                                },
+                                onMoreSelected = {
+                                    mainViewModel.selectProcedure(procedureItem)
+                                },
+                                onToggleFavorite = { procedureId ->
+                                    mainViewModel.toggleFavorite(procedureId)
+                                }
+                            )
                         }
                     }
                 }
@@ -603,6 +695,8 @@ fun SearchScreen(mainViewModel: MainViewModel, isAdmin: Boolean, onLogoutClick: 
         }
     }
 }
+
+
 
 @Composable
 fun AnimatedProcedureRow(

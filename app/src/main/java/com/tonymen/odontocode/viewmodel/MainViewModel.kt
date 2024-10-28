@@ -21,39 +21,55 @@ class MainViewModel : ViewModel() {
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
+    // Admin State
     private val _isAdmin = MutableStateFlow(false)
     val isAdmin: StateFlow<Boolean> = _isAdmin
 
+    // Areas
     private val _areas = MutableStateFlow<List<Area>>(emptyList())
     val areas: StateFlow<List<Area>> = _areas
 
     private val _odontopediatriaAreas = MutableStateFlow<List<Area>>(emptyList())
     val odontopediatriaAreas: StateFlow<List<Area>> = _odontopediatriaAreas
 
+    // Procedures
     private val _proceduresByArea = MutableStateFlow<Map<String, List<Procedure>>>(emptyMap())
     val proceduresByArea: StateFlow<Map<String, List<Procedure>>> = _proceduresByArea
-
-    private val _searchResults = MutableStateFlow<List<Procedure>>(emptyList())
-    val searchResults: StateFlow<List<Procedure>> = _searchResults
-
-    private val _favorites = MutableStateFlow<List<String>>(emptyList())
-    val favorites: StateFlow<List<String>> = _favorites
-
-    private val _expandedAreas = MutableStateFlow<String?>(null) // Allow only one area to be expanded at a time
-    val expandedAreas: StateFlow<String?> = _expandedAreas
-
-    private val _searchCriteria = MutableStateFlow("Área")
-    val searchCriteria: StateFlow<String> = _searchCriteria
-
-    private val _diagnoses = MutableStateFlow<List<Diagnosis>>(emptyList())
-    val diagnoses: StateFlow<List<Diagnosis>> = _diagnoses
 
     private val _procedures = MutableStateFlow<List<Procedure>>(emptyList())
     val procedures: StateFlow<List<Procedure>> = _procedures
 
+    // Diagnoses
+    private val _diagnoses = MutableStateFlow<List<Diagnosis>>(emptyList())
+    val diagnoses: StateFlow<List<Diagnosis>> = _diagnoses
+
+    // Search State
+    private val _searchResults = MutableStateFlow<List<Procedure>>(emptyList())
+    val searchResults: StateFlow<List<Procedure>> = _searchResults
+
+    private val _searchCriteria = MutableStateFlow("Área")
+    val searchCriteria: StateFlow<String> = _searchCriteria
+
+    private val _isSearching = MutableStateFlow(false)
+    val isSearching: StateFlow<Boolean> = _isSearching
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
+    private val _isEmptyResults = MutableStateFlow(false)
+    val isEmptyResults: StateFlow<Boolean> = _isEmptyResults
+
+    private val _shouldClearFocus = MutableStateFlow(false)
+    val shouldClearFocus: StateFlow<Boolean> = _shouldClearFocus
+
+    // Favorites State
+    private val _favorites = MutableStateFlow<List<String>>(emptyList())
+    val favorites: StateFlow<List<String>> = _favorites
+
     private val _isFavorite = MutableStateFlow(false)
     val isFavorite: StateFlow<Boolean> = _isFavorite
 
+    // Area & Diagnosis Names
     private val _areaName = MutableStateFlow("Cargando...")
     val areaName: StateFlow<String> = _areaName
 
@@ -63,25 +79,137 @@ class MainViewModel : ViewModel() {
     private val _diagnosisCIE10 = MutableStateFlow("Cargando...")
     val diagnosisCIE10: StateFlow<String> = _diagnosisCIE10
 
+    // Selected Procedure
     private val _selectedProcedure = MutableStateFlow<Procedure?>(null)
     val selectedProcedure: StateFlow<Procedure?> = _selectedProcedure
 
+    // Expanded State
+    private val _expandedAreas = MutableStateFlow<Set<String>>(emptySet())
+    val expandedAreas: StateFlow<Set<String>> = _expandedAreas
+
+    private val _expandedDiagnoses = MutableStateFlow<Set<String>>(emptySet())
+    val expandedDiagnoses: StateFlow<Set<String>> = _expandedDiagnoses
+
+    // Back Pressed State
     private val _backPressedOnce = MutableStateFlow(false)
     val backPressedOnce: StateFlow<Boolean> = _backPressedOnce
 
-    private val _shouldClearFocus = MutableStateFlow(false)
-    val shouldClearFocus: StateFlow<Boolean> = _shouldClearFocus
     private var currentJob: Job? = null
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading
+    private val _expandedArea = MutableStateFlow<String?>(null)
+    val expandedArea: StateFlow<String?> = _expandedArea
 
-    private val _isEmptyResults = MutableStateFlow(false)
-    val isEmptyResults: StateFlow<Boolean> = _isEmptyResults
+    private val _expandedDiagnosis = MutableStateFlow<String?>(null)
+    val expandedDiagnosis: StateFlow<String?> = _expandedDiagnosis
 
-    private val _expandedDiagnoses = MutableStateFlow<String?>(null) // Allow only one diagnosis to be expanded at a time
-    val expandedDiagnoses: StateFlow<String?> = _expandedDiagnoses
 
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            loadInitialData()
+        }
+    }
+
+    private suspend fun loadInitialData() {
+        checkUserRole()
+        loadAreas()
+        loadOdontopediatriaAreas()
+        loadFavorites()
+        loadDiagnoses()
+        loadProcedures()
+        loadUserData()
+    }
+
+    // User Role
+    private suspend fun checkUserRole() {
+        val userId = auth.currentUser?.uid ?: return
+        try {
+            val document = firestore.collection("users").document(userId).get().await()
+            val user = document.toObject(User::class.java)
+            _isAdmin.value = (user?.userType == UserType.ADMIN)
+        } catch (e: Exception) {
+            Log.e("MainViewModel", "Error checking user role: \${e.message}")
+        }
+    }
+
+    // Search Procedures
+    fun updateSearchCriteria(criteria: String) {
+        _searchCriteria.value = criteria
+    }
+
+    fun searchProcedures(query: String) {
+        val normalizedQuery = normalizeString(query)
+        val searchOption = _searchCriteria.value
+        currentJob?.cancel()  // Cancelar la búsqueda anterior si la hay
+
+        currentJob = viewModelScope.launch(Dispatchers.IO) {
+            try {
+                _isLoading.value = true
+                _isSearching.value = true  // Indicar que se está buscando
+
+                val filteredProcedures = filterProcedures(normalizedQuery, searchOption)
+
+                _isLoading.value = false
+                _isSearching.value = false  // Indicar que la búsqueda ha terminado
+                _searchResults.value = filteredProcedures
+                _isEmptyResults.value = filteredProcedures.isEmpty()
+                requestClearFocus()  // Solicitar que se limpie el foco al finalizar la búsqueda
+
+            } catch (e: Exception) {
+                _isLoading.value = false
+                _isSearching.value = false
+                Log.e("MainViewModel", "Error en la búsqueda: \${e.message}")
+            }
+        }
+    }
+
+    private fun filterProcedures(normalizedQuery: String, searchOption: String): List<Procedure> {
+        return when (searchOption) {
+            "Área" -> {
+                val matchingAreaIds = (_areas.value + _odontopediatriaAreas.value)
+                    .filter { area -> normalizeString(area.name).contains(normalizedQuery, ignoreCase = true) }
+                    .map { it.id }
+                    .toSet()
+
+                _procedures.value.filter { matchingAreaIds.contains(it.area) }
+            }
+            "Diagnóstico" -> {
+                val matchingDiagnosisIds = _diagnoses.value
+                    .filter { diagnosis -> normalizeString(diagnosis.name).contains(normalizedQuery, ignoreCase = true) }
+                    .map { it.id }
+                    .toSet()
+
+                _procedures.value.filter { matchingDiagnosisIds.contains(it.diagnosis) }
+            }
+            "CIE-10 Diagnóstico" -> {
+                val matchingDiagnosisIds = _diagnoses.value
+                    .filter { diagnosis -> normalizeString(diagnosis.cie10diagnosis).contains(normalizedQuery, ignoreCase = true) }
+                    .map { it.id }
+                    .toSet()
+
+                _procedures.value.filter { matchingDiagnosisIds.contains(it.diagnosis) }
+            }
+            "Procedimiento" -> {
+                _procedures.value.filter {
+                    normalizeString(it.procedure).contains(normalizedQuery, ignoreCase = true)
+                }
+            }
+            "CIE-10 Procedimiento" -> {
+                _procedures.value.filter {
+                    normalizeString(it.cie10procedure).contains(normalizedQuery, ignoreCase = true)
+                }
+            }
+            else -> emptyList()
+        }
+    }
+
+    // Normalize String
+    private fun normalizeString(input: String): String {
+        return Normalizer.normalize(input, Normalizer.Form.NFD)
+            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+            .lowercase()
+    }
+
+    // Back Press Handling
     fun setBackPressedOnce(value: Boolean) {
         _backPressedOnce.value = value
     }
@@ -97,101 +225,7 @@ class MainViewModel : ViewModel() {
         setBackPressedOnce(false)
     }
 
-    init {
-        viewModelScope.launch(Dispatchers.IO) {
-            checkUserRole()
-            loadAreas()
-            loadOdontopediatriaAreas()
-            loadFavorites()
-            loadDiagnoses()
-            loadProcedures()
-            loadUserData()
-        }
-    }
-
-    private suspend fun checkUserRole() {
-        val userId = auth.currentUser?.uid ?: return
-        try {
-            val document = firestore.collection("users").document(userId).get().await()
-            val user = document.toObject(User::class.java)
-            _isAdmin.value = (user?.userType == UserType.ADMIN)
-        } catch (e: Exception) {
-            Log.e("MainViewModel", "Error checking user role: \${e.message}")
-        }
-    }
-
-    fun updateSearchCriteria(criteria: String) {
-        _searchCriteria.value = criteria
-    }
-
-    fun searchProcedures(query: String, searchOption: String) {
-        val normalizedQuery = normalizeString(query)
-        currentJob?.cancel()  // Cancelar la búsqueda anterior si la hay
-
-        currentJob = viewModelScope.launch(Dispatchers.IO) {
-            _isLoading.value = true
-
-            val filteredProcedures = when (searchOption) {
-                "Área" -> {
-                    val matchingAreaIds = (_areas.value + _odontopediatriaAreas.value)
-                        .filter { area -> normalizeString(area.name).contains(normalizedQuery, ignoreCase = true) }
-                        .map { it.id }
-                        .toSet()
-
-                    _procedures.value.filter { matchingAreaIds.contains(it.area) }
-                }
-
-                "Diagnóstico" -> {
-                    val matchingDiagnosisIds = (_diagnoses.value)
-                        .filter { diagnosis -> normalizeString(diagnosis.name).contains(normalizedQuery, ignoreCase = true) }
-                        .map { it.id }
-                        .toSet()
-
-                    _procedures.value.filter { matchingDiagnosisIds.contains(it.diagnosis) }
-                }
-                "CIE-10 Diagnóstico" -> {
-                    val matchingDiagnosisIds = (_diagnoses.value)
-                        .filter { diagnosis -> normalizeString(diagnosis.cie10diagnosis).contains(normalizedQuery, ignoreCase = true) }
-                        .map { it.id }
-                        .toSet()
-
-                    _procedures.value.filter { matchingDiagnosisIds.contains(it.diagnosis) }
-                }
-                "Procedimiento" -> {
-                    _procedures.value.filter {
-                        normalizeString(it.procedure).contains(normalizedQuery, ignoreCase = true)
-                    }
-                }
-                "CIE-10 Procedimiento" -> {
-                    _procedures.value.filter {
-                        normalizeString(it.cie10procedure).contains(normalizedQuery, ignoreCase = true)
-                    }
-                }
-                else -> emptyList()
-            }
-
-            _isLoading.value = false
-            _searchResults.value = filteredProcedures
-            _isEmptyResults.value = filteredProcedures.isEmpty()
-            requestClearFocus()  // Solicitar que se limpie el foco al finalizar la búsqueda
-        }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        currentJob?.cancel()  // Cancelar cualquier trabajo en curso
-    }
-
-    fun clearSearchResults() {
-        _searchResults.value = emptyList()
-    }
-
-    private fun normalizeString(input: String): String {
-        return Normalizer.normalize(input, Normalizer.Form.NFD)
-            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
-            .lowercase()
-    }
-
+    // Favorite Procedures
     fun toggleFavorite(procedureId: String) {
         val userId = auth.currentUser?.uid ?: return
         viewModelScope.launch(Dispatchers.IO) {
@@ -213,11 +247,10 @@ class MainViewModel : ViewModel() {
                 }
                 loadFavoriteState(procedureId)
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error toggling favorite: ${e.message}")
+                Log.e("MainViewModel", "Error toggling favorite: \${e.message}")
             }
         }
     }
-
 
     fun loadFavoriteState(procedureId: String) {
         val userId = auth.currentUser?.uid ?: return
@@ -235,6 +268,7 @@ class MainViewModel : ViewModel() {
         }
     }
 
+    // Area & Diagnosis Loading
     fun loadAreaName(areaId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -277,6 +311,7 @@ class MainViewModel : ViewModel() {
         }
     }
 
+    // Data Loading
     private suspend fun loadAreas() {
         try {
             val documents = firestore.collection("areas").get().await()
@@ -308,26 +343,6 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    fun collapseAllAreas() {
-        _expandedAreas.value = null
-    }
-
-    fun fetchProceduresByArea(areaId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val documents = firestore.collection("procedures").whereEqualTo("area", areaId).get().await()
-                val procedureList = documents.map { it.toObject(Procedure::class.java) }
-                _proceduresByArea.update { it.toMutableMap().apply { put(areaId, procedureList) } }
-            } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading procedures for area: \$areaId")
-            }
-        }
-    }
-
-    fun toggleAreaExpansion(areaId: String) {
-        _expandedAreas.value = if (_expandedAreas.value == areaId) null else areaId
-    }
-
     private suspend fun loadDiagnoses() {
         val diagnosesList = mutableListOf<Diagnosis>()
         try {
@@ -351,79 +366,46 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    fun fetchDiagnosesByArea(area: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val documents = firestore.collection("diagnosis").whereEqualTo("area", area).get().await()
-                val diagnosisList = documents.map { it.toObject(Diagnosis::class.java) }
-                _diagnoses.value = diagnosisList
-            } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading diagnoses for area: \${e.message}")
+    // Expandable State
+// Expandable State
+    fun toggleAreaExpansion(areaId: String) {
+        _expandedArea.update { currentExpanded ->
+            if (currentExpanded == areaId) {
+                null // Si el área ya está expandida, la colapsamos
+            } else {
+                areaId // Expandimos la nueva área
             }
         }
+        collapseAllDiagnoses() // Colapsar todos los diagnósticos cuando se cambia el área
     }
 
-    fun fetchDiagnosesByOdontopediatriaArea(area: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val documents = firestore.collection("diagnosisodontopediatria").whereEqualTo("area", area).get().await()
-                val diagnosisList = documents.map { it.toObject(Diagnosis::class.java) }
-                _diagnoses.value = diagnosisList
-            } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading odontopediatria diagnoses for area: \${e.message}")
-            }
-        }
-    }
 
-    fun fetchProceduresByDiagnosis(diagnosisId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val documents = firestore.collection("procedures").whereEqualTo("diagnosis", diagnosisId).get().await()
-                val procedureList = documents.map { it.toObject(Procedure::class.java) }
-                _procedures.value = procedureList
-            } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading procedures for diagnosis: \${e.message}")
-            }
-        }
-    }
-
+    // Toggle Diagnosis Expansion
     fun toggleDiagnosisExpansion(diagnosisId: String) {
-        _expandedDiagnoses.value = if (_expandedDiagnoses.value == diagnosisId) null else diagnosisId
-    }
-
-    fun collapseAllDiagnoses() {
-        _expandedDiagnoses.value = null
-    }
-
-    fun saveSearchOption(context: Context, option: String) {
-        val sharedPreferences = context.getSharedPreferences("OdontoCodePrefs", Context.MODE_PRIVATE)
-        sharedPreferences.edit().putString("searchOption", option).apply()
-    }
-
-    fun loadSearchOption(context: Context): String {
-        val sharedPreferences = context.getSharedPreferences("OdontoCodePrefs", Context.MODE_PRIVATE)
-        return sharedPreferences.getString("searchOption", "Área") ?: "Área"
-    }
-
-    private suspend fun loadUserData() {
-        val userId = auth.currentUser?.uid ?: return
-        try {
-            val document = firestore.collection("users").document(userId).get().await()
-            val user = document.toObject(User::class.java)
-            _isAdmin.value = (user?.userType == UserType.ADMIN)
-        } catch (e: Exception) {
-            Log.e("MainViewModel", "Error loading user data: \${e.message}")
+        _expandedDiagnosis.update { currentExpanded ->
+            if (currentExpanded == diagnosisId) {
+                null // Si el diagnóstico ya está expandido, lo colapsamos
+            } else {
+                diagnosisId // Expandimos el nuevo diagnóstico
+            }
         }
     }
 
+
+    // Selected Procedure
     fun selectProcedure(procedure: Procedure?) {
         _selectedProcedure.value = procedure
     }
 
     fun clearSelectedProcedure() {
         _selectedProcedure.value = null
+    }// MainViewModel
+    fun clearSearchResults() {
+        _searchResults.value = emptyList()
     }
 
+
+    // User Sign Out
     fun signOutUser(onSignOutComplete: () -> Unit) {
         val userId = auth.currentUser?.uid ?: return
         viewModelScope.launch(Dispatchers.IO) {
@@ -438,6 +420,8 @@ class MainViewModel : ViewModel() {
             }
         }
     }
+
+    // Device ID Handling
     private fun getCurrentDeviceId(context: Context): String {
         return android.provider.Settings.Secure.getString(
             context.contentResolver,
@@ -452,12 +436,11 @@ class MainViewModel : ViewModel() {
                 .update("activeDeviceId", deviceId)
                 .await()
         } catch (e: Exception) {
-            Log.e("MainViewModel", "Error updating device ID: ${e.message}")
+            Log.e("MainViewModel", "Error updating device ID: \${e.message}")
         }
     }
 
-
-
+    // Clear Focus
     fun requestClearFocus() {
         _shouldClearFocus.value = true
     }
@@ -465,4 +448,82 @@ class MainViewModel : ViewModel() {
     fun clearFocusHandled() {
         _shouldClearFocus.value = false
     }
+    // Expandable State - Collapse All Areas
+    fun collapseAllAreas() {
+        _expandedAreas.value = emptySet()
+    }
+
+    // Expandable State - Collapse All Diagnoses
+    fun collapseAllDiagnoses() {
+        _expandedDiagnoses.value = emptySet()
+    }
+
+
+    // Load User Data
+    private suspend fun loadUserData() {
+        val userId = auth.currentUser?.uid ?: return
+        try {
+            val document = firestore.collection("users").document(userId).get().await()
+            val user = document.toObject(User::class.java)
+            _isAdmin.value = (user?.userType == UserType.ADMIN)
+        } catch (e: Exception) {
+            Log.e("MainViewModel", "Error loading user data: \${e.message}")
+        }
+    }
+
+    // Save and Load Search Option
+    fun saveSearchOption(context: Context, option: String) {
+        val sharedPreferences = context.getSharedPreferences("OdontoCodePrefs", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putString("searchOption", option).apply()
+    }
+
+    fun loadSearchOption(context: Context): String {
+        val sharedPreferences = context.getSharedPreferences("OdontoCodePrefs", Context.MODE_PRIVATE)
+        return sharedPreferences.getString("searchOption", "Área") ?: "Área"
+    }
+    fun fetchDiagnosesByArea(areaId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val documents = firestore.collection("diagnosis")
+                    .whereEqualTo("area", areaId)
+                    .get()
+                    .await()
+                val diagnosesList = documents.map { it.toObject(Diagnosis::class.java) }
+                _diagnoses.value = diagnosesList
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Error fetching diagnoses by area: ${e.message}")
+            }
+        }
+    }
+
+    fun fetchProceduresByDiagnosis(diagnosisId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val documents = firestore.collection("procedures")
+                    .whereEqualTo("diagnosis", diagnosisId)
+                    .get()
+                    .await()
+                val proceduresList = documents.map { it.toObject(Procedure::class.java) }
+                _procedures.value = proceduresList
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Error fetching procedures by diagnosis: ${e.message}")
+            }
+        }
+    }
+
+    fun fetchDiagnosesByOdontopediatriaArea(areaId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val documents = firestore.collection("diagnosisodontopediatria")
+                    .whereEqualTo("area", areaId)
+                    .get()
+                    .await()
+                val diagnosesList = documents.map { it.toObject(Diagnosis::class.java) }
+                _diagnoses.value = diagnosesList
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Error fetching diagnoses by odontopediatria area: ${e.message}")
+            }
+        }
+    }
+
 }
