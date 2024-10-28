@@ -7,7 +7,7 @@ data class User(
     val userType: UserType = UserType.USER, // Default to USER type
     val ci: String = "",                // Cédula de Identidad (default empty string)
     val approved: Boolean = false,     // Default to false (not approved by default)
-    val activeSession: Boolean = false   // Stores active session (device or token ID)
+    val activeDeviceId: String = ""   // Stores the ID of the device with an active session
 )
 
 enum class UserType {

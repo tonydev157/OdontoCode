@@ -213,10 +213,11 @@ class MainViewModel : ViewModel() {
                 }
                 loadFavoriteState(procedureId)
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error toggling favorite: \${e.message}")
+                Log.e("MainViewModel", "Error toggling favorite: ${e.message}")
             }
         }
     }
+
 
     fun loadFavoriteState(procedureId: String) {
         val userId = auth.currentUser?.uid ?: return
@@ -437,6 +438,25 @@ class MainViewModel : ViewModel() {
             }
         }
     }
+    private fun getCurrentDeviceId(context: Context): String {
+        return android.provider.Settings.Secure.getString(
+            context.contentResolver,
+            android.provider.Settings.Secure.ANDROID_ID
+        )
+    }
+
+    private suspend fun updateDeviceId(userId: String, context: Context) {
+        try {
+            val deviceId = getCurrentDeviceId(context)
+            firestore.collection("users").document(userId)
+                .update("activeDeviceId", deviceId)
+                .await()
+        } catch (e: Exception) {
+            Log.e("MainViewModel", "Error updating device ID: ${e.message}")
+        }
+    }
+
+
 
     fun requestClearFocus() {
         _shouldClearFocus.value = true

@@ -38,6 +38,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.tonymen.odontocode.R
 import com.tonymen.odontocode.data.*
 import com.tonymen.odontocode.ui.theme.OdontoCodeTheme
@@ -46,43 +49,142 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val mainViewModel: MainViewModel by viewModels()
+    private val auth = FirebaseAuth.getInstance()
+    private val firestore = FirebaseFirestore.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Verificar si la sesión está activa
+        val userId = auth.currentUser?.uid
+        if (userId != null) {
+            verificarSesionActiva(userId)
+        } else {
+            // Si no hay usuario, redirigir al login
+            redirigirAlLogin()
+        }
+
         // Cargar opción de búsqueda guardada desde el ViewModel
         val savedSearchOption = mainViewModel.loadSearchOption(this)
-        mainViewModel.updateSearchCriteria(savedSearchOption) // Asegúrate de que esto actualice el estado correctamente
+        mainViewModel.updateSearchCriteria(savedSearchOption)
 
         setContent {
             OdontoCodeTheme {
                 val isAdmin by mainViewModel.isAdmin.collectAsStateWithLifecycle()
                 SearchScreen(mainViewModel = mainViewModel, isAdmin = isAdmin) {
-                    mainViewModel.signOutUser {
-                        startActivity(Intent(this, LoginActivity::class.java).apply {
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        })
+                    userId?.let {
+                        cerrarSesionDesdeSettings(it)
                     }
                 }
             }
         }
     }
 
+    private fun verificarSesionActiva(userId: String) {
+        firestore.collection("users").document(userId).get()
+            .addOnSuccessListener { document ->
+                val user = document.toObject(User::class.java)
+                if (user != null) {
+                    val currentDeviceId = getCurrentDeviceId()
+                    if (user.activeDeviceId.isNullOrEmpty()) {
+                        // Si no hay un activeDeviceId configurado, actualizar con el dispositivo actual
+                        firestore.collection("users").document(userId)
+                            .update("activeDeviceId", currentDeviceId)
+                            .addOnSuccessListener {
+                                // Continuar con la sesión después de actualizar el activeDeviceId
+                                setMainContent()
+                            }
+                            .addOnFailureListener {
+                                Toast.makeText(this, "Error al actualizar el dispositivo activo", Toast.LENGTH_LONG).show()
+                                cerrarSesionYRedirigir()
+                            }
+                    } else if (user.activeDeviceId != currentDeviceId) {
+                        // Si el activeDeviceId no coincide con el dispositivo actual, cerrar la sesión
+                        showInvalidSessionDialog()
+                    } else {
+                        // El dispositivo es correcto, establecer el contenido
+                        setMainContent()
+                    }
+                } else {
+                    // Si el usuario es null, cerrar la sesión y redirigir al login
+                    cerrarSesionYRedirigir()
+                }
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Error al verificar la sesión", Toast.LENGTH_LONG).show()
+                cerrarSesionYRedirigir()
+            }
+    }
+
+
+    private fun showInvalidSessionDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Sesión inválida")
+            .setMessage("La sesión está activa en otro dispositivo. Se cerrará la sesión actual.")
+            .setPositiveButton("Aceptar") { _, _ ->
+                cerrarSesionYRedirigir()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+
+    private fun setMainContent() {
+        setContent {
+            OdontoCodeTheme {
+                val isAdmin by mainViewModel.isAdmin.collectAsStateWithLifecycle()
+                SearchScreen(mainViewModel = mainViewModel, isAdmin = isAdmin) {
+                    val userId = auth.currentUser?.uid
+                    userId?.let {
+                        cerrarSesionDesdeSettings(it)
+                    }
+                }
+            }
+        }
+    }
+
+
+    private fun cerrarSesionDesdeSettings(userId: String) {
+        firestore.collection("users").document(userId)
+            .update("activeDeviceId", "")
+            .addOnSuccessListener {
+                // ActiveDeviceId se actualizó correctamente, cerrar sesión de Firebase
+                auth.signOut()
+                redirigirAlLogin()
+            }
+            .addOnFailureListener {
+                // Mostrar error al usuario si ocurre un problema
+                Toast.makeText(this, "Error al cerrar sesión, intente de nuevo", Toast.LENGTH_LONG).show()
+            }
+    }
+
+    private fun redirigirAlLogin() {
+        startActivity(Intent(this, LoginActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        })
+        finish()
+    }
+
+    private fun cerrarSesionYRedirigir() {
+        auth.signOut()
+        redirigirAlLogin()
+    }
+
     override fun onBackPressed() {
         when {
             mainViewModel.selectedProcedure.value != null -> {
                 mainViewModel.clearSelectedProcedure()
-                mainViewModel.requestClearFocus() // Solicitar que se limpie el enfoque
+                mainViewModel.requestClearFocus()
             }
 
             mainViewModel.expandedAreas.value?.isNotEmpty() == true -> {
                 mainViewModel.collapseAllAreas()
-                mainViewModel.requestClearFocus() // Solicitar que se limpie el enfoque
+                mainViewModel.requestClearFocus()
             }
 
             mainViewModel.expandedDiagnoses.value?.isNotEmpty() == true -> {
                 mainViewModel.collapseAllDiagnoses()
-                mainViewModel.requestClearFocus() // Solicitar que se limpie el enfoque
+                mainViewModel.requestClearFocus()
             }
 
             mainViewModel.backPressedOnce.value -> {
@@ -97,11 +199,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
     private fun showExitToast() {
         Toast.makeText(this, "Presiona nuevamente para salir", Toast.LENGTH_SHORT).show()
     }
+
+    // Obtener ID único del dispositivo
+    private fun getCurrentDeviceId(): String {
+        return android.provider.Settings.Secure.getString(
+            contentResolver,
+            android.provider.Settings.Secure.ANDROID_ID
+        )
+    }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -365,7 +475,7 @@ fun SearchScreen(mainViewModel: MainViewModel, isAdmin: Boolean, onLogoutClick: 
                                 // Agregar los procedimientos sin diagnóstico bajo "Sin Especificar"
                                 val proceduresWithoutDiagnosis = procedures.filter { it.diagnosis == "N/A" && it.area == area.id }
                                 if (proceduresWithoutDiagnosis.isNotEmpty()) {
-                                    val diagnosisId = "SinEspecificar_${area.id}"
+                                    val diagnosisId = "SinEspecificar_\${area.id}"
                                     DiagnosisRow(
                                         diagnosis = Diagnosis(
                                             id = diagnosisId,
@@ -403,7 +513,7 @@ fun SearchScreen(mainViewModel: MainViewModel, isAdmin: Boolean, onLogoutClick: 
                     // Título para las áreas de odontopediatría
                     item {
                         Text(
-                            text = "Áreas Odontopediatría",
+                            text = "Odontopediatría",
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(16.dp)
                         )
@@ -454,7 +564,7 @@ fun SearchScreen(mainViewModel: MainViewModel, isAdmin: Boolean, onLogoutClick: 
                                 // Agregar los procedimientos sin diagnóstico bajo "Sin Especificar"
                                 val proceduresWithoutDiagnosis = procedures.filter { it.diagnosis == "N/A" && it.area == area.id }
                                 if (proceduresWithoutDiagnosis.isNotEmpty()) {
-                                    val diagnosisId = "SinEspecificar_${area.id}"
+                                    val diagnosisId = "SinEspecificar_\${area.id}"
                                     DiagnosisRow(
                                         diagnosis = Diagnosis(
                                             id = diagnosisId,
@@ -493,7 +603,6 @@ fun SearchScreen(mainViewModel: MainViewModel, isAdmin: Boolean, onLogoutClick: 
         }
     }
 }
-
 
 @Composable
 fun AnimatedProcedureRow(
@@ -559,8 +668,6 @@ fun AnimatedProcedureRow(
         }
     }
 }
-
-
 
 @Composable
 fun SearchBarWithDropdown(
@@ -649,9 +756,6 @@ fun SearchBarWithDropdown(
         }
     }
 }
-
-
-
 
 @Composable
 fun AreaRow(area: Area, onAreaSelected: (Area) -> Unit) {
@@ -816,7 +920,7 @@ fun ProcedureDetail(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Código de Procedimiento: ${procedure.cie10procedure}",
+                    text = "Código de Procedimiento: \${procedure.cie10procedure}",
                     style = MaterialTheme.typography.titleMedium
                 )
                 IconButton(onClick = onDismiss) {
@@ -828,15 +932,15 @@ fun ProcedureDetail(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Procedimiento: ${procedure.procedure}",
+                text = "Procedimiento: \${procedure.procedure}",
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
             )
-            Text(text = "Diagnóstico: $diagnosisName", style = MaterialTheme.typography.bodyMedium)
+            Text(text = "Diagnóstico: \$diagnosisName", style = MaterialTheme.typography.bodyMedium)
             Text(
-                text = "Código de Diagnóstico: $diagnosisCIE10",
+                text = "Código de Diagnóstico: \$diagnosisCIE10",
                 style = MaterialTheme.typography.bodyMedium
             )
-            Text(text = "Área: $areaName", style = MaterialTheme.typography.bodyMedium)
+            Text(text = "Área: \$areaName", style = MaterialTheme.typography.bodyMedium)
 
             IconButton(onClick = {
                 mainViewModel.toggleFavorite(procedure.id)

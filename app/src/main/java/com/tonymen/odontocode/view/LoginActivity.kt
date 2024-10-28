@@ -2,7 +2,6 @@ package com.tonymen.odontocode.view
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -97,39 +96,53 @@ class LoginActivity : ComponentActivity() {
                 if (document.exists()) {
                     val user = document.toObject<User>()
                     if (user != null) {
-                        if (user.userType == UserType.ADMIN) {
-                            Toast.makeText(this, "Bienvenido, Admin", Toast.LENGTH_LONG).show()
-                            navigateToMainActivity()
-                        } else if (user.userType == UserType.USER) {
-                            if (user.approved) {
-                                if (!user.activeSession) {
-                                    // Si no hay sesión activa, actualizar a true
+                        when {
+                            user.userType == UserType.ADMIN -> {
+                                navigateToMainActivity()
+                            }
+                            user.userType == UserType.USER && user.approved -> {
+                                if (user.activeDeviceId.isNullOrEmpty()) {
+                                    // Si no hay dispositivo registrado, permitir inicio de sesión y actualizar el dispositivo activo
                                     firestore.collection("users").document(userId)
-                                        .update("activeSession", true)
+                                        .update("activeDeviceId", currentDeviceId)
                                         .addOnSuccessListener {
                                             Toast.makeText(this, "Inicio de sesión exitoso", Toast.LENGTH_LONG).show()
                                             navigateToMainActivity()
                                         }
+                                        .addOnFailureListener {
+                                            Toast.makeText(this, "Error al actualizar el dispositivo activo", Toast.LENGTH_LONG).show()
+                                            FirebaseAuth.getInstance().signOut()
+                                        }
+                                } else if (user.activeDeviceId == currentDeviceId) {
+                                    // Si el dispositivo activo es el mismo, permitir el inicio de sesión
+                                    Toast.makeText(this, "Inicio de sesión exitoso", Toast.LENGTH_LONG).show()
+                                    navigateToMainActivity()
                                 } else {
+                                    // Si la cuenta está activa en otro dispositivo
                                     Toast.makeText(this, "Tu cuenta está activa en otro dispositivo. Cierra la sesión para continuar.", Toast.LENGTH_LONG).show()
                                     FirebaseAuth.getInstance().signOut()
                                 }
-                            } else {
+                            }
+                            else -> {
                                 Toast.makeText(this, "Tu cuenta aún no está activada", Toast.LENGTH_LONG).show()
                                 FirebaseAuth.getInstance().signOut()
                             }
                         }
                     } else {
                         Toast.makeText(this, "Error al procesar el usuario", Toast.LENGTH_LONG).show()
+                        FirebaseAuth.getInstance().signOut()
                     }
                 } else {
                     Toast.makeText(this, "Usuario no encontrado en la base de datos", Toast.LENGTH_LONG).show()
+                    FirebaseAuth.getInstance().signOut()
                 }
             }
             .addOnFailureListener {
                 Toast.makeText(this, "Error al verificar el usuario: ${it.message}", Toast.LENGTH_LONG).show()
+                FirebaseAuth.getInstance().signOut()
             }
     }
+
 
 
 
@@ -282,4 +295,3 @@ fun LoginScreen(
         }
     }
 }
-
