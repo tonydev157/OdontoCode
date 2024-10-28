@@ -97,15 +97,15 @@ class LoginActivity : ComponentActivity() {
                 if (document.exists()) {
                     val user = document.toObject<User>()
                     if (user != null) {
-                        Log.d("Firestore", "isApproved: ${user.approved}")
                         if (user.userType == UserType.ADMIN) {
                             Toast.makeText(this, "Bienvenido, Admin", Toast.LENGTH_LONG).show()
                             navigateToMainActivity()
                         } else if (user.userType == UserType.USER) {
                             if (user.approved) {
-                                if (user.activeSession == null || user.activeSession == currentDeviceId) {
+                                if (!user.activeSession) {
+                                    // Si no hay sesión activa, actualizar a true
                                     firestore.collection("users").document(userId)
-                                        .update("activeSession", currentDeviceId)
+                                        .update("activeSession", true)
                                         .addOnSuccessListener {
                                             Toast.makeText(this, "Inicio de sesión exitoso", Toast.LENGTH_LONG).show()
                                             navigateToMainActivity()
@@ -130,6 +130,8 @@ class LoginActivity : ComponentActivity() {
                 Toast.makeText(this, "Error al verificar el usuario: ${it.message}", Toast.LENGTH_LONG).show()
             }
     }
+
+
 
     private fun navigateToMainActivity() {
         startActivity(Intent(this, MainActivity::class.java))

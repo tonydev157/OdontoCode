@@ -63,6 +63,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         firestore = FirebaseFirestore.getInstance()
+        // Cargar opción de búsqueda guardada
+        val savedSearchOption = loadSearchOption()
+        mainViewModel.updateSearchCriteria(savedSearchOption) // Asegúrate de que esto actualice el estado correctamente
 
         val userId = FirebaseAuth.getInstance().currentUser?.uid
         if (userId != null) {
@@ -76,10 +79,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             OdontoCodeTheme {
                 SearchScreen(firestore, isAdmin) {
-                    FirebaseAuth.getInstance().signOut()
-                    startActivity(Intent(this, LoginActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    })
+                    val userId = FirebaseAuth.getInstance().currentUser?.uid
+                    if (userId != null) {
+                        signOutUser(userId) // Llama al método para cerrar sesión
+                    }
                 }
             }
         }
@@ -108,6 +111,18 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+    // Método para guardar la opción de búsqueda
+    private fun saveSearchOption(option: String) {
+        val sharedPreferences = getSharedPreferences("OdontoCodePrefs", MODE_PRIVATE)
+        sharedPreferences.edit().putString("searchOption", option).apply()
+    }
+
+    // Método para cargar la opción de búsqueda
+    private fun loadSearchOption(): String {
+        val sharedPreferences = getSharedPreferences("OdontoCodePrefs", MODE_PRIVATE)
+        return sharedPreferences.getString("searchOption", "Área") ?: "Área" // Valor por defecto
+    }
+
 
     // Mostrar el mensaje de salida
     private fun showExitToast() {
@@ -142,53 +157,23 @@ class MainActivity : ComponentActivity() {
             null
         }
     }
-
-    private fun loadAreasToFirestore() {
-        val json = readJsonFromAssets("Area.json") ?: return
-        val areas = Gson().fromJson(json, Array<Area>::class.java).toList()
-
-        val areaIdMap = mutableMapOf<String, String>()
-
-        areas.forEach { area ->
-            firestore.collection("areas").add(area)
-                .addOnSuccessListener { documentReference ->
-                    areaIdMap[area.name] = documentReference.id
-                    firestore.collection("areas").document(documentReference.id)
-                        .update("id", documentReference.id)
-                    Log.d("MainActivity", "Área añadida con ID: ${documentReference.id}")
-
-                    if (areaIdMap.size == areas.size) {
-                        loadProceduresToFirestore(areaIdMap)
-                    }
-                }
-                .addOnFailureListener { e ->
-                    Log.e("MainActivity", "Error al añadir área", e)
-                }
-        }
-    }
-
-    private fun loadProceduresToFirestore(areaIdMap: Map<String, String>) {
-        val json = readJsonFromAssets("Procedure.json") ?: return
-        val procedures = Gson().fromJson(json, Array<Procedure>::class.java).toList()
-
-        procedures.forEach { procedure ->
-            val areaId = areaIdMap[procedure.area]
-            if (areaId != null) {
-                val updatedProcedure = procedure.copy(area = areaId, id = "")
-                firestore.collection("procedures").add(updatedProcedure)
-                    .addOnSuccessListener { documentReference ->
-                        firestore.collection("procedures").document(documentReference.id)
-                            .update("id", documentReference.id)
-                        Log.d("MainActivity", "Procedimiento añadido con ID: ${documentReference.id}")
-                    }
-                    .addOnFailureListener { e ->
-                        Log.e("MainActivity", "Error al añadir procedimiento", e)
-                    }
-            } else {
-                Log.e("MainActivity", "Área no encontrada para el procedimiento: ${procedure.procedure}")
+    private fun signOutUser(userId: String) {
+        // Actualizar el estado de activeSession a false en Firestore
+        firestore.collection("users").document(userId)
+            .update("activeSession", false)
+            .addOnSuccessListener {
+                // Cerrar sesión en FirebaseAuth
+                FirebaseAuth.getInstance().signOut()
+                // Navegar a la actividad de inicio de sesión
+                startActivity(Intent(this, LoginActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                })
             }
-        }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error al cerrar sesión: ${e.message}", Toast.LENGTH_LONG).show()
+            }
     }
+
 
     // Función de filtrado con resolución de IDs
     fun filterProcedureList(
@@ -196,11 +181,19 @@ class MainActivity : ComponentActivity() {
         procedureList: List<Procedure>,
         searchOption: String,
         diagnosisMap: Map<String, Diagnosis>, // Mapa de diagnósticos combinado
-        areaMap: Map<String, Area> // Mapa de áreas
+        areaMap: Map<String, Area> // Mapa de áreas combinado
     ): List<Procedure> {
         val normalizedQuery = normalizeString(query)
 
-        return when (searchOption) {
+        val filteredProcedures = when (searchOption) {
+            "Área" -> {
+                // Filtrar procedimientos por área
+                val matchingAreaIds = areaMap.filter { (_, area) ->
+                    normalizeString(area.name).contains(normalizedQuery, ignoreCase = true)
+                }.keys.toSet() // Extraer IDs de áreas que coinciden
+
+                procedureList.filter { matchingAreaIds.contains(it.area) } // Filtrar procedimientos que pertenecen a esas áreas
+            }
             "Diagnóstico" -> {
                 // Buscar IDs de diagnósticos que coinciden con el nombre
                 val matchingDiagnosisIds = diagnosisMap.filter { (_, diagnosis) ->
@@ -231,17 +224,14 @@ class MainActivity : ComponentActivity() {
                     normalizeString(it.cie10procedure).contains(normalizedQuery, ignoreCase = true)
                 }
             }
-            "Área" -> {
-                // Filtrar procedimientos por área
-                val matchingAreaIds = areaMap.filter { (_, area) ->
-                    normalizeString(area.name).contains(normalizedQuery, ignoreCase = true)
-                }.keys.toSet()
-
-                procedureList.filter { matchingAreaIds.contains(it.area) }
-            }
-            else -> emptyList()
+            else -> emptyList() // Retornar lista vacía si el tipo de búsqueda no es válido
         }
+
+        Log.d("FilterProcedureList", "Procedimientos filtrados: ${filteredProcedures.map { it.id }}") // Log de IDs de procedimientos filtrados
+        return filteredProcedures
     }
+
+
 
 
     // Función para normalizar cadenas, eliminando tildes y convirtiendo a minúsculas
@@ -262,7 +252,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun SearchScreen(firestore: FirebaseFirestore, isAdmin: Boolean, onLogoutClick: () -> Unit) {
         var query by remember { mutableStateOf("") }
-        var searchOption by remember { mutableStateOf("Procedimiento") }
+        var searchOption by remember { mutableStateOf("Área") }
         var areaList by remember { mutableStateOf<List<Area>>(emptyList()) }
         var odontopediatriaList by remember { mutableStateOf<List<Area>>(emptyList()) }
         var procedureMap by remember { mutableStateOf<Map<String, List<Procedure>>>(emptyMap()) }
@@ -284,10 +274,10 @@ class MainActivity : ComponentActivity() {
             // Cargar las áreas y llenar el mapa
             fetchAreas(firestore) { fetchedAreas ->
                 areaList = fetchedAreas.sortedBy { it.name }
-                areaMap = fetchedAreas.associateBy { it.id }
+                areaMap = fetchedAreas.associateBy { it.id } // Asegúrate de que el área se asocie correctamente
             }
 
-            // Cargar las áreas de odontopediatría
+            // Cargar las áreas de odontopediatría (opcional si ya está cubierto en fetchAreas)
             fetchAreasOdontopediatria(firestore) { fetchedOdontopediatria ->
                 odontopediatriaList = fetchedOdontopediatria.sortedBy { it.name }
             }
@@ -303,6 +293,7 @@ class MainActivity : ComponentActivity() {
                 diagnosisMap = fetchedDiagnoses.groupBy { it.area }
             }
         }
+
 
 
         Scaffold(
@@ -390,19 +381,32 @@ class MainActivity : ComponentActivity() {
                             onDismissRequest = { expanded = false }
                         ) {
                             DropdownMenuItem(onClick = {
+                                searchOption = "Área"
+                                saveSearchOption(searchOption) // Guarda la opción seleccionada
+                                expanded = false
+                            }, text = { Text("Área") })
+
+                            DropdownMenuItem(onClick = {
                                 searchOption = "Procedimiento"
+                                saveSearchOption(searchOption) // Guarda la opción seleccionada
                                 expanded = false
                             }, text = { Text("Procedimiento") })
+
                             DropdownMenuItem(onClick = {
                                 searchOption = "CIE-10 Procedimiento"
+                                saveSearchOption(searchOption) // Guarda la opción seleccionada
                                 expanded = false
                             }, text = { Text("CIE-10 Procedimiento") })
+
                             DropdownMenuItem(onClick = {
                                 searchOption = "Diagnóstico"
+                                saveSearchOption(searchOption) // Guarda la opción seleccionada
                                 expanded = false
                             }, text = { Text("Diagnóstico") })
+
                             DropdownMenuItem(onClick = {
                                 searchOption = "CIE-10 Diagnóstico"
+                                saveSearchOption(searchOption) // Guarda la opción seleccionada
                                 expanded = false
                             }, text = { Text("CIE-10 Diagnóstico") })
                         }
@@ -428,7 +432,7 @@ class MainActivity : ComponentActivity() {
                                 procedureList = allProcedureList,
                                 searchOption = searchOption,
                                 diagnosisMap = combinedDiagnosisMap, // Usa el mapa combinado
-                                areaMap = areaMap
+                                areaMap = areaMap // Asegúrate de pasar el areaMap aquí
                             )
                             isDropdownExpanded = searchResults.isNotEmpty() // Mostrar el dropdown si hay resultados
                         } else {
@@ -443,8 +447,10 @@ class MainActivity : ComponentActivity() {
                     isDropdownExpanded = isDropdownExpanded, // Estado del dropdown
                     onDismissDropdown = { isDropdownExpanded = false }, // Cierra el dropdown
                     focusRequester = focusRequester, // Manejo del enfoque
-                    keyboardController = keyboardController // Control del teclado
+                    keyboardController = keyboardController, // Control del teclado
+                    areaMap = areaMap // Añadir el área aquí
                 )
+
 
 
 
@@ -648,16 +654,27 @@ class MainActivity : ComponentActivity() {
 
     // Funciones para cargar datos
     fun fetchAreas(firestore: FirebaseFirestore, onResult: (List<Area>) -> Unit) {
+        val areas = mutableListOf<Area>()
+
+        // Cargar áreas de la primera colección
         firestore.collection("areas")
             .get()
             .addOnSuccessListener { documents ->
-                val areaList = documents.map { it.toObject(Area::class.java) }
-                onResult(areaList)
+                areas.addAll(documents.map { it.toObject(Area::class.java) })
+
+                // Cargar áreas de la segunda colección
+                firestore.collection("areasodontopediatria")
+                    .get()
+                    .addOnSuccessListener { documents2 ->
+                        areas.addAll(documents2.map { it.toObject(Area::class.java) })
+                        onResult(areas) // Retornar todas las áreas
+                    }
             }
             .addOnFailureListener {
                 onResult(emptyList())
             }
     }
+
 
     fun fetchAreasOdontopediatria(firestore: FirebaseFirestore, onResult: (List<Area>) -> Unit) {
         firestore.collection("areasodontopediatria")
@@ -702,12 +719,14 @@ class MainActivity : ComponentActivity() {
             .get()
             .addOnSuccessListener { documents ->
                 val procedureList = documents.map { it.toObject(Procedure::class.java) }
+                Log.d("FetchProcedures", "Procedimientos cargados: ${procedureList.map { it.id }}") // Log de IDs de procedimientos
                 onResult(procedureList)
             }
             .addOnFailureListener {
                 onResult(emptyList())
             }
     }
+
 
     fun fetchDiagnosesByArea(firestore: FirebaseFirestore, area: String, onResult: (List<Diagnosis>) -> Unit) {
         firestore.collection("diagnosis")
@@ -761,10 +780,16 @@ fun SearchBarWithDropdown(
     isDropdownExpanded: Boolean,
     onDismissDropdown: () -> Unit,
     focusRequester: FocusRequester,
-    keyboardController: SoftwareKeyboardController?
+    keyboardController: SoftwareKeyboardController?,
+    areaMap: Map<String, Area> // Agrega el parámetro areaMap
 ) {
     val maxHeight = 200.dp
     val isLightTheme = !isSystemInDarkTheme()
+
+    // Función para obtener el nombre del área
+    fun getAreaName(areaId: String): String {
+        return areaMap[areaId]?.name ?: "Área no disponible"
+    }
 
     Column {
         OutlinedTextField(
@@ -817,9 +842,24 @@ fun SearchBarWithDropdown(
                             if (isLightTheme) Color(0xFFE0F7FA) else Color(0xFF000B33)
                         ),
                     text = {
-                        Column {
-                            Text(result.cie10procedure, style = MaterialTheme.typography.bodyMedium)
-                            Text(result.procedure, style = MaterialTheme.typography.bodySmall)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween // Espacio entre el texto y el área
+                        ) {
+                            Column {
+                                Text(
+                                    result.cie10procedure, // CIE-10 del Procedimiento
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                                )
+                                Text(
+                                    result.procedure, // Nombre del Procedimiento
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            Text(
+                                getAreaName(result.area), // Obtener el nombre del área
+                                style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray) // Estilo para el área
+                            )
                         }
                     }
                 )
@@ -827,6 +867,7 @@ fun SearchBarWithDropdown(
         }
     }
 }
+
 
 @Composable
 fun AreaRow(area: Area, onAreaSelected: (Area) -> Unit) {
@@ -1135,12 +1176,14 @@ fun fetchAreas(firestore: FirebaseFirestore, onResult: (List<Area>) -> Unit) {
         .get()
         .addOnSuccessListener { documents ->
             val areasList = documents.map { it.toObject(Area::class.java) }
+            Log.d("FetchAreas", "Áreas cargadas: ${areasList.map { it.id }}") // Log de IDs de áreas
             onResult(areasList)
         }
         .addOnFailureListener {
             onResult(emptyList())
         }
 }
+
 
 fun fetchProceduresByArea(
     firestore: FirebaseFirestore,
