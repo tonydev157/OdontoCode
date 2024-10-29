@@ -381,36 +381,49 @@ class MainViewModel : ViewModel() {
     fun loadDiagnosisData(diagnosisId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // Buscar primero en la lista completa de diagnósticos
+                // Verificar si ya tenemos el diagnóstico cargado correctamente
+                if (_diagnosisName.value != "Cargando..." && _diagnosisName.value != "Diagnóstico no encontrado") {
+                    Log.d("MainViewModel", "Diagnosis data already loaded. Skipping Firestore call.")
+                    return@launch
+                }
+
+                // Verificar si el diagnóstico ya está en la lista completa
                 val diagnosis = _fullDiagnoses.value.find { it.id == diagnosisId }
 
                 if (diagnosis != null) {
+                    Log.d("MainViewModel", "Diagnosis found locally: ${diagnosis.name}")
                     _diagnosisName.value = diagnosis.name
                     _diagnosisCIE10.value = diagnosis.cie10diagnosis
                 } else {
-                    // Si no está en la lista local, buscar directamente en Firestore
+                    Log.d("MainViewModel", "Diagnosis not found locally, fetching from Firestore")
+
+                    // Buscar en Firestore
                     val diagnosisFromFirestore = firestore.collection("diagnosis")
                         .document(diagnosisId).get().await().toObject(Diagnosis::class.java)
                         ?: firestore.collection("diagnosisodontopediatria")
                             .document(diagnosisId).get().await().toObject(Diagnosis::class.java)
 
                     if (diagnosisFromFirestore != null) {
+                        Log.d("MainViewModel", "Diagnosis loaded from Firestore: ${diagnosisFromFirestore.name}")
                         _diagnosisName.value = diagnosisFromFirestore.name
                         _diagnosisCIE10.value = diagnosisFromFirestore.cie10diagnosis
-                        // Añadir a la lista completa para futuras búsquedas
+                        // Añadir a la lista local para futuras consultas
                         _fullDiagnoses.update { it + diagnosisFromFirestore }
                     } else {
+                        Log.e("MainViewModel", "Diagnosis not found in Firestore for id: $diagnosisId")
                         _diagnosisName.value = "Diagnóstico no encontrado"
                         _diagnosisCIE10.value = "CIE-10 no encontrado"
                     }
                 }
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading diagnosis data: \${e.message}")
-                _diagnosisName.value = "Error al cargar"
-                _diagnosisCIE10.value = "Error al cargar"
+                Log.e("MainViewModel", "Error loading diagnosis data: ${e.message}")
+                _diagnosisName.value = "Error al cargar el diagnóstico"
+                _diagnosisCIE10.value = "Error al cargar el CIE-10"
             }
         }
     }
+
+
 
     // Data Loading
     private suspend fun loadAreas() {
@@ -489,55 +502,46 @@ class MainViewModel : ViewModel() {
     // Selected Procedure
     fun selectProcedure(procedure: Procedure?) {
         if (procedure != null) {
-            // Verificar primero si el procedimiento completo ya está en la lista completa
-            val completeProcedure = _fullProcedures.value.find { it.id == procedure.id }
-            if (completeProcedure != null) {
-                _selectedProcedure.value = completeProcedure
+            // Verificar que el procedimiento tenga un área y diagnóstico válidos
+            if (procedure.area.isNotEmpty() && procedure.diagnosis.isNotEmpty()) {
+                // Verificar si el procedimiento completo ya está en la lista completa
+                val completeProcedure = _fullProcedures.value.find { it.id == procedure.id }
+                if (completeProcedure != null) {
+                    _selectedProcedure.value = completeProcedure
 
-                // Verificar si el diagnóstico ya está en la lista completa
-                val diagnosis = _fullDiagnoses.value.find { it.id == completeProcedure.diagnosis }
-                if (diagnosis != null) {
-                    _diagnosisName.value = diagnosis.name
-                    _diagnosisCIE10.value = diagnosis.cie10diagnosis
-                } else {
-                    // Si el diagnóstico no está cargado, buscarlo en Firestore
+                    // Cargar el nombre del área y diagnóstico
+                    loadAreaName(completeProcedure.area)
                     loadDiagnosisData(completeProcedure.diagnosis)
-                }
+                } else {
+                    // Si no está en la lista completa, recargar desde Firestore
+                    viewModelScope.launch(Dispatchers.IO) {
+                        try {
+                            val documentSnapshot = firestore.collection("procedures")
+                                .document(procedure.id)
+                                .get()
+                                .await()
+                            val fullProcedure = documentSnapshot.toObject(Procedure::class.java)
+                            if (fullProcedure != null) {
+                                _selectedProcedure.value = fullProcedure
 
-                loadAreaName(completeProcedure.area)
-            } else {
-                // Si no está en la lista completa, recargar desde Firestore
-                viewModelScope.launch(Dispatchers.IO) {
-                    try {
-                        val documentSnapshot = firestore.collection("procedures")
-                            .document(procedure.id)
-                            .get()
-                            .await()
-                        val fullProcedure = documentSnapshot.toObject(Procedure::class.java)
-                        if (fullProcedure != null) {
-                            _selectedProcedure.value = fullProcedure
-
-                            // Verificar si el diagnóstico ya está en la lista completa
-                            val diagnosis = _fullDiagnoses.value.find { it.id == fullProcedure.diagnosis }
-                            if (diagnosis != null) {
-                                _diagnosisName.value = diagnosis.name
-                                _diagnosisCIE10.value = diagnosis.cie10diagnosis
-                            } else {
-                                // Si el diagnóstico no está cargado, buscarlo en Firestore
+                                // Cargar el nombre del área y diagnóstico
+                                loadAreaName(fullProcedure.area)
                                 loadDiagnosisData(fullProcedure.diagnosis)
                             }
-
-                            loadAreaName(fullProcedure.area)
+                        } catch (e: Exception) {
+                            Log.e("MainViewModel", "Error loading full procedure: ${e.message}")
                         }
-                    } catch (e: Exception) {
-                        Log.e("MainViewModel", "Error loading full procedure: ${e.message}")
                     }
                 }
+            } else {
+                Log.e("MainViewModel", "Procedure has invalid area or diagnosis.")
+                _selectedProcedure.value = null
             }
         } else {
             _selectedProcedure.value = null
         }
     }
+
 
 
     fun clearSelectedProcedure() {

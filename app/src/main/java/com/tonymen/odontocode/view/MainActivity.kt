@@ -881,6 +881,8 @@ fun ProcedureDetail(
     val areaName by mainViewModel.areaName.collectAsStateWithLifecycle()
     val diagnosisName by mainViewModel.diagnosisName.collectAsStateWithLifecycle()
     val diagnosisCIE10 by mainViewModel.diagnosisCIE10.collectAsStateWithLifecycle()
+    val favoriteProcedures by mainViewModel.favoriteProcedures.collectAsStateWithLifecycle()
+    val isFavorite = favoriteProcedures.contains(procedure.id)
 
     val isLoading = areaName == "Cargando..." || diagnosisName == "Cargando..."
 
@@ -927,7 +929,21 @@ fun ProcedureDetail(
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(text = "Área: $areaName", style = MaterialTheme.typography.bodyMedium)
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Icono de favorito
+                IconButton(onClick = { mainViewModel.toggleFavorite(procedure.id) }) {
+                    Icon(
+                        painter = if (isFavorite) painterResource(id = R.drawable.ic_favorite) else painterResource(
+                            id = R.drawable.ic_favorite_border
+                        ),
+                        contentDescription = if (isFavorite) "Quitar de Favoritos" else "Agregar a Favoritos",
+                        tint = if (isFavorite) MaterialTheme.colorScheme.primary else Color.Gray
+                    )
+                }
             }
         }
     }
 }
+
