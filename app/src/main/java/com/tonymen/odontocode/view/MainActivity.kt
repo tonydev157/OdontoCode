@@ -379,15 +379,29 @@ fun SearchDropdown(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text("Buscar por: ", style = MaterialTheme.typography.titleMedium)
+        // Texto de "Buscar por" más vistoso
+        Text(
+            text = "Buscar por:",
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary),
+            modifier = Modifier.padding(end = 8.dp) // Acercar el botón al texto
+        )
 
         Box {
-            Button(onClick = { expanded = true }) {
-                Text(searchCriteria)
+            Button(
+                onClick = { expanded = true },
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            ) {
+                Text(
+                    text = searchCriteria,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
+                )
             }
+
             DropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
@@ -413,7 +427,7 @@ fun SearchDropdown(
                                 mainViewModel.loadDiagnosisData(procedure.diagnosis)
                             }
                         },
-                        text = { Text(criteria) }
+                        text = { Text(criteria, style = MaterialTheme.typography.bodyMedium) }
                     )
                 }
             }
@@ -422,7 +436,8 @@ fun SearchDropdown(
 }
 
 
-@OptIn(ExperimentalComposeUiApi::class)
+
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SearchBarWithDropdown(
     mainViewModel: MainViewModel,
@@ -438,21 +453,20 @@ fun SearchBarWithDropdown(
     // Obtener LocalFocusManager aquí
     val focusManager = LocalFocusManager.current
 
-    Column {
+    Column(modifier = Modifier.padding(8.dp)) {
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            label = { Text("Buscador") },
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
+            label = { Text("Buscador...") },
+            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Buscar") },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp)
+                .focusRequester(focusRequester)
                 .onFocusChanged { focusState ->
                     if (!focusState.isFocused) {
                         keyboardController?.hide()
                     }
-                }
-                .shadow(4.dp, shape = MaterialTheme.shapes.medium),
+                },
             singleLine = true,
             textStyle = LocalTextStyle.current.copy(fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface),
             keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
@@ -467,6 +481,12 @@ fun SearchBarWithDropdown(
                     focusManager.clearFocus()
                     keyboardController?.hide()
                 }
+            ),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                cursorColor = MaterialTheme.colorScheme.primary
             )
         )
 
@@ -545,6 +565,7 @@ fun SearchBarWithDropdown(
         }
     }
 }
+
 
 @Composable
 fun AreaDiagnosisList(
