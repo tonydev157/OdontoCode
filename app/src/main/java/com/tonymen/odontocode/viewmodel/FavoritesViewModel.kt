@@ -30,8 +30,9 @@ class FavoritesViewModel : ViewModel() {
     private val _diagnosisDetails = MutableStateFlow<Map<String, Diagnosis>>(emptyMap())
     val diagnosisDetails: StateFlow<Map<String, Diagnosis>> = _diagnosisDetails
 
-    // Caché para almacenar nombres de áreas
-    private val areaNameCache = mutableMapOf<String, String>()
+    // StateFlow para almacenar nombres de áreas
+    private val _areaNameCache = MutableStateFlow<Map<String, String>>(emptyMap())
+    val areaNameCache: StateFlow<Map<String, String>> = _areaNameCache
 
     // StateFlow para mantener un conjunto de los IDs de procedimientos favoritos del usuario
     private val _favoriteIds = MutableStateFlow<Set<String>>(emptySet())
@@ -82,6 +83,7 @@ class FavoritesViewModel : ViewModel() {
                                 // Cargar detalles de diagnósticos y áreas
                                 procedures.forEach { procedure ->
                                     loadDiagnosisDetails(procedure.diagnosis)
+                                    loadAreaDetails(procedure.area)
                                 }
                             }
                             .addOnFailureListener { e ->
@@ -172,17 +174,17 @@ class FavoritesViewModel : ViewModel() {
         }
     }
 
-
     // Función para cargar los detalles del área (de ambas colecciones) y almacenar en caché
-// Función para cargar los detalles del área (de ambas colecciones)
     fun loadAreaDetails(areaId: String) {
+        if (_areaNameCache.value.containsKey(areaId)) return // Si el área ya está en caché, no volver a cargar
+
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val area = firestore.collection("areas").document(areaId).get().await().getString("name")
                     ?: firestore.collection("areasodontopediatria").document(areaId).get().await().getString("name")
 
                 area?.let {
-                    cacheAreaName(areaId, it)
+                    _areaNameCache.value = _areaNameCache.value + (areaId to it)
                 }
             } catch (e: Exception) {
                 Log.e("FavoritesViewModel", "Error al cargar los detalles del área", e)
@@ -190,15 +192,8 @@ class FavoritesViewModel : ViewModel() {
         }
     }
 
-
-
     // Función para obtener el nombre del área desde el caché
     fun getCachedAreaName(areaId: String): String? {
-        return areaNameCache[areaId]
-    }
-
-    // Función para almacenar el nombre del área en el caché
-     fun cacheAreaName(areaId: String, areaName: String) {
-        areaNameCache[areaId] = areaName
+        return _areaNameCache.value[areaId]
     }
 }
