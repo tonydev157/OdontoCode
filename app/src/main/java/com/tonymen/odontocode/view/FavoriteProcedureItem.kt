@@ -18,7 +18,7 @@ import com.tonymen.odontocode.viewmodel.FavoritesViewModel
 @Composable
 fun FavoriteProcedureItem(favorite: Procedure, viewModel: FavoritesViewModel) {
     val isFavorite by viewModel.tempFavoriteIds.collectAsStateWithLifecycle()
-    var areaName by remember { mutableStateOf("Cargando...") }
+    var areaName by remember { mutableStateOf(viewModel.getCachedAreaName(favorite.area) ?: "Cargando...") }
 
     val isCurrentlyFavorite = isFavorite.contains(favorite.id)
 
@@ -37,8 +37,9 @@ fun FavoriteProcedureItem(favorite: Procedure, viewModel: FavoritesViewModel) {
 
     // Lanzar la carga del área solo si es necesario
     LaunchedEffect(favorite.area) {
-        viewModel.loadAreaDetails(favorite.area) { areaNameResult ->
-            areaName = areaNameResult ?: "Área no encontrada"
+        if (areaName == "Cargando...") {
+            viewModel.loadAreaDetails(favorite.area)
+            areaName = viewModel.getCachedAreaName(favorite.area) ?: "Área no encontrada"
         }
     }
 

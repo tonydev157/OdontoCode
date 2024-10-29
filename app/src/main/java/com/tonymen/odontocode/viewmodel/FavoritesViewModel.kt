@@ -30,6 +30,9 @@ class FavoritesViewModel : ViewModel() {
     private val _diagnosisDetails = MutableStateFlow<Map<String, Diagnosis>>(emptyMap())
     val diagnosisDetails: StateFlow<Map<String, Diagnosis>> = _diagnosisDetails
 
+    // Caché para almacenar nombres de áreas
+    private val areaNameCache = mutableMapOf<String, String>()
+
     // StateFlow para mantener un conjunto de los IDs de procedimientos favoritos del usuario
     private val _favoriteIds = MutableStateFlow<Set<String>>(emptySet())
     val favoriteIds: StateFlow<Set<String>> = _favoriteIds
@@ -153,7 +156,7 @@ class FavoritesViewModel : ViewModel() {
         }
     }
 
-    // Función para cargar los detalles del diagnóstico (de ambas colecciones)
+    // Función para cargar los detalles del diagnóstico (de ambas colecciones) y almacenar en caché
     fun loadDiagnosisDetails(diagnosisId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -169,18 +172,33 @@ class FavoritesViewModel : ViewModel() {
         }
     }
 
-    // Función para cargar los detalles del área (de ambas colecciones)
-    fun loadAreaDetails(areaId: String, onResult: (String?) -> Unit) {
+
+    // Función para cargar los detalles del área (de ambas colecciones) y almacenar en caché
+// Función para cargar los detalles del área (de ambas colecciones)
+    fun loadAreaDetails(areaId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val area = firestore.collection("areas").document(areaId).get().await().getString("name")
                     ?: firestore.collection("areasodontopediatria").document(areaId).get().await().getString("name")
 
-                onResult(area)
+                area?.let {
+                    cacheAreaName(areaId, it)
+                }
             } catch (e: Exception) {
                 Log.e("FavoritesViewModel", "Error al cargar los detalles del área", e)
-                onResult(null)
             }
         }
+    }
+
+
+
+    // Función para obtener el nombre del área desde el caché
+    fun getCachedAreaName(areaId: String): String? {
+        return areaNameCache[areaId]
+    }
+
+    // Función para almacenar el nombre del área en el caché
+     fun cacheAreaName(areaId: String, areaName: String) {
+        areaNameCache[areaId] = areaName
     }
 }

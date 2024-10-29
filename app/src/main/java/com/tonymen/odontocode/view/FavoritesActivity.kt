@@ -32,6 +32,10 @@ class FavoritesActivity : ComponentActivity() {
                 val favoriteProcedures by viewModel.filteredFavorites.collectAsStateWithLifecycle()
                 var query by remember { mutableStateOf("") }
 
+                LaunchedEffect(Unit) {
+                    viewModel.searchFavorites("") // Cargar favoritos al iniciar
+                }
+
                 Scaffold(
                     topBar = {
                         CenterAlignedTopAppBar(
@@ -50,12 +54,12 @@ class FavoritesActivity : ComponentActivity() {
                             .fillMaxSize()
                             .padding(16.dp)
                     ) {
-                        // Barra de búsqueda
+                        // Barra de búsqueda reactiva
                         OutlinedTextField(
                             value = query,
                             onValueChange = {
                                 query = it
-                                viewModel.searchFavorites(it)
+                                viewModel.searchFavorites(query) // Realizar búsqueda en tiempo real al cambiar el texto
                             },
                             label = { Text("Buscar por código o nombre", color = MaterialTheme.colorScheme.onSurface) },
                             leadingIcon = {
@@ -82,7 +86,7 @@ class FavoritesActivity : ComponentActivity() {
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Mostrar los procedimientos favoritos
+                        // Mostrar los procedimientos favoritos filtrados en tiempo real
                         LazyColumn(
                             modifier = Modifier.fillMaxSize()
                         ) {
