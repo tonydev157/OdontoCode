@@ -100,43 +100,40 @@ class FavoritesViewModel : ViewModel() {
         }
     }
 
-    // Función para alternar el estado de favorito de un procedimiento
+    // Función para alternar el estado de favorito de un procedimiento de forma temporal
     fun toggleFavorite(procedureId: String) {
+        // Actualizar el estado local del ícono inmediatamente
+        val isCurrentlyFavorite = _tempFavoriteIds.value.contains(procedureId)
+        _tempFavoriteIds.value = if (isCurrentlyFavorite) {
+            _tempFavoriteIds.value - procedureId
+        } else {
+            _tempFavoriteIds.value + procedureId
+        }
+    }
+
+    // Función para confirmar los cambios de favoritos y guardarlos en Firebase
+    fun confirmFavoritesChanges() {
         userId?.let { userId ->
             val favoriteRef = firestore.collection("userFavorites").document(userId)
 
-            // Actualizar el estado local del ícono inmediatamente sin eliminar de la lista
-            if (_tempFavoriteIds.value.contains(procedureId)) {
-                _tempFavoriteIds.value = _tempFavoriteIds.value - procedureId
-            } else {
-                _tempFavoriteIds.value = _tempFavoriteIds.value + procedureId
-            }
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    val originalFavorites = _favoriteIds.value
+                    val updatedFavorites = _tempFavoriteIds.value
 
-            favoriteRef.get().addOnSuccessListener { document ->
-                if (document.exists()) {
-                    val currentFavorites = document.toObject(Favorite::class.java)
-                    val updatedFavorites = currentFavorites?.procedureIds?.toMutableList() ?: mutableListOf()
+                    val toAdd = updatedFavorites - originalFavorites
+                    val toRemove = originalFavorites - updatedFavorites
 
-                    if (updatedFavorites.contains(procedureId)) {
-                        updatedFavorites.remove(procedureId)
+                    if (toAdd.isNotEmpty() || toRemove.isNotEmpty()) {
+                        val newFavoritesList = updatedFavorites.toList()
+                        favoriteRef.update("procedureIds", newFavoritesList).await()
+                        Log.d("FavoritesViewModel", "Favoritos actualizados correctamente")
                     } else {
-                        updatedFavorites.add(procedureId)
+                        Log.d("FavoritesViewModel", "No hay cambios en los favoritos para guardar")
                     }
 
-                    // Actualiza Firebase en segundo plano
-                    favoriteRef.update("procedureIds", updatedFavorites)
-                        .addOnSuccessListener {
-                            Log.d("FavoritesViewModel", "Favorito actualizado correctamente")
-                        }
-                        .addOnFailureListener { e ->
-                            Log.e("FavoritesViewModel", "Error al actualizar favorito en Firestore", e)
-                            // Revertir el estado temporal si la actualización falla
-                            if (updatedFavorites.contains(procedureId)) {
-                                _tempFavoriteIds.value = _tempFavoriteIds.value + procedureId
-                            } else {
-                                _tempFavoriteIds.value = _tempFavoriteIds.value - procedureId
-                            }
-                        }
+                } catch (e: Exception) {
+                    Log.e("FavoritesViewModel", "Error al actualizar favoritos en Firestore", e)
                 }
             }
         }

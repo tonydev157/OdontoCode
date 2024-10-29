@@ -28,12 +28,14 @@ fun FavoriteProcedureItem(favorite: Procedure, viewModel: FavoritesViewModel) {
     val diagnosisName = diagnosis?.name ?: if (favorite.diagnosis == "N/A") "Sin especificar" else "Cargando..."
     val diagnosisCIE10 = diagnosis?.cie10diagnosis ?: if (favorite.diagnosis == "N/A") "Sin especificar" else "Cargando..."
 
+    // Lanzar la carga de diagnóstico solo si es necesario
     LaunchedEffect(favorite.diagnosis) {
         if (diagnosis == null && favorite.diagnosis != "N/A") {
             viewModel.loadDiagnosisDetails(favorite.diagnosis)
         }
     }
 
+    // Lanzar la carga del área solo si es necesario
     LaunchedEffect(favorite.area) {
         viewModel.loadAreaDetails(favorite.area) { areaNameResult ->
             areaName = areaNameResult ?: "Área no encontrada"

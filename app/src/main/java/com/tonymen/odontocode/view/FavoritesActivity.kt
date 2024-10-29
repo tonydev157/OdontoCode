@@ -98,4 +98,14 @@ class FavoritesActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onPause() {
+        super.onPause()
+        viewModel.confirmFavoritesChanges() // Confirmar cambios de favoritos al pausar la actividad
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        viewModel.confirmFavoritesChanges() // Confirmar cambios de favoritos al salir de la actividad
+    }
 }
