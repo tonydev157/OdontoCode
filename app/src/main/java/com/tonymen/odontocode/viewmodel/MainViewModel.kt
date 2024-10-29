@@ -117,7 +117,6 @@ class MainViewModel : ViewModel() {
     private val _favoriteProcedureStates = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     val favoriteProcedureStates: StateFlow<Map<String, Boolean>> = _favoriteProcedureStates
 
-
     init {
         viewModelScope.launch(Dispatchers.IO) {
             loadInitialData()
@@ -167,6 +166,9 @@ class MainViewModel : ViewModel() {
 
         searchJob = viewModelScope.launch(Dispatchers.IO) {
             try {
+                // Asegurarse de que todos los diagnósticos estén cargados antes de buscar
+                ensureFullDiagnosesLoaded()
+
                 // Restablecer estados antes de iniciar la búsqueda
                 _isLoading.value = true
                 _isSearching.value = true
@@ -203,6 +205,12 @@ class MainViewModel : ViewModel() {
 
                 Log.e("MainViewModel", "Error en la búsqueda: ${e.message}")
             }
+        }
+    }
+
+    private suspend fun ensureFullDiagnosesLoaded() {
+        if (_fullDiagnoses.value.isEmpty()) {
+            loadDiagnoses()
         }
     }
 
@@ -314,7 +322,7 @@ class MainViewModel : ViewModel() {
 
                 favoritesRef.update("procedureIds", updatedProcedureIds.toList()).await()
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error toggling favorite: ${e.message}")
+                Log.e("MainViewModel", "Error toggling favorite: \${e.message}")
             }
         }
     }
@@ -334,10 +342,11 @@ class MainViewModel : ViewModel() {
                     }
                 }
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading favorite state: ${e.message}")
+                Log.e("MainViewModel", "Error loading favorite state: \${e.message}")
             }
         }
     }
+
     private suspend fun loadFavorites() {
         val userId = auth.currentUser?.uid ?: return
         try {
@@ -345,10 +354,9 @@ class MainViewModel : ViewModel() {
             val favorite = document.toObject(Favorite::class.java)
             _favoriteProcedures.value = favorite?.procedureIds?.toSet() ?: emptySet()
         } catch (e: Exception) {
-            Log.e("MainViewModel", "Error loading favorites: ${e.message}")
+            Log.e("MainViewModel", "Error loading favorites: \${e.message}")
         }
     }
-
 
     // Area & Diagnosis Loading
     fun loadAreaName(areaId: String) {
@@ -373,16 +381,33 @@ class MainViewModel : ViewModel() {
     fun loadDiagnosisData(diagnosisId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                // Buscar primero en la lista completa de diagnósticos
                 val diagnosis = _fullDiagnoses.value.find { it.id == diagnosisId }
+
                 if (diagnosis != null) {
                     _diagnosisName.value = diagnosis.name
                     _diagnosisCIE10.value = diagnosis.cie10diagnosis
                 } else {
-                    _diagnosisName.value = "Diagnóstico no encontrado"
-                    _diagnosisCIE10.value = "CIE-10 no encontrado"
+                    // Si no está en la lista local, buscar directamente en Firestore
+                    val diagnosisFromFirestore = firestore.collection("diagnosis")
+                        .document(diagnosisId).get().await().toObject(Diagnosis::class.java)
+                        ?: firestore.collection("diagnosisodontopediatria")
+                            .document(diagnosisId).get().await().toObject(Diagnosis::class.java)
+
+                    if (diagnosisFromFirestore != null) {
+                        _diagnosisName.value = diagnosisFromFirestore.name
+                        _diagnosisCIE10.value = diagnosisFromFirestore.cie10diagnosis
+                        // Añadir a la lista completa para futuras búsquedas
+                        _fullDiagnoses.update { it + diagnosisFromFirestore }
+                    } else {
+                        _diagnosisName.value = "Diagnóstico no encontrado"
+                        _diagnosisCIE10.value = "CIE-10 no encontrado"
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error loading diagnosis data: \${e.message}")
+                _diagnosisName.value = "Error al cargar"
+                _diagnosisCIE10.value = "Error al cargar"
             }
         }
     }
@@ -410,16 +435,18 @@ class MainViewModel : ViewModel() {
         }
     }
 
-
     private suspend fun loadDiagnoses() {
         val diagnosesList = mutableListOf<Diagnosis>()
         try {
+            // Cargar todos los diagnósticos de Firestore y actualizar la lista completa
             val documents = firestore.collection("diagnosis").get().await()
             diagnosesList.addAll(documents.map { it.toObject(Diagnosis::class.java) })
             val documents2 = firestore.collection("diagnosisodontopediatria").get().await()
             diagnosesList.addAll(documents2.map { it.toObject(Diagnosis::class.java) })
-            _diagnoses.value = diagnosesList
+
+            // Actualizar tanto la lista completa de diagnósticos como la temporal
             _fullDiagnoses.value = diagnosesList
+            _diagnoses.value = diagnosesList
         } catch (e: Exception) {
             Log.e("MainViewModel", "Error loading diagnoses: \${e.message}")
         }
@@ -461,8 +488,57 @@ class MainViewModel : ViewModel() {
 
     // Selected Procedure
     fun selectProcedure(procedure: Procedure?) {
-        _selectedProcedure.value = procedure
+        if (procedure != null) {
+            // Verificar primero si el procedimiento completo ya está en la lista completa
+            val completeProcedure = _fullProcedures.value.find { it.id == procedure.id }
+            if (completeProcedure != null) {
+                _selectedProcedure.value = completeProcedure
+
+                // Verificar si el diagnóstico ya está en la lista completa
+                val diagnosis = _fullDiagnoses.value.find { it.id == completeProcedure.diagnosis }
+                if (diagnosis != null) {
+                    _diagnosisName.value = diagnosis.name
+                    _diagnosisCIE10.value = diagnosis.cie10diagnosis
+                } else {
+                    // Si el diagnóstico no está cargado, buscarlo en Firestore
+                    loadDiagnosisData(completeProcedure.diagnosis)
+                }
+
+                loadAreaName(completeProcedure.area)
+            } else {
+                // Si no está en la lista completa, recargar desde Firestore
+                viewModelScope.launch(Dispatchers.IO) {
+                    try {
+                        val documentSnapshot = firestore.collection("procedures")
+                            .document(procedure.id)
+                            .get()
+                            .await()
+                        val fullProcedure = documentSnapshot.toObject(Procedure::class.java)
+                        if (fullProcedure != null) {
+                            _selectedProcedure.value = fullProcedure
+
+                            // Verificar si el diagnóstico ya está en la lista completa
+                            val diagnosis = _fullDiagnoses.value.find { it.id == fullProcedure.diagnosis }
+                            if (diagnosis != null) {
+                                _diagnosisName.value = diagnosis.name
+                                _diagnosisCIE10.value = diagnosis.cie10diagnosis
+                            } else {
+                                // Si el diagnóstico no está cargado, buscarlo en Firestore
+                                loadDiagnosisData(fullProcedure.diagnosis)
+                            }
+
+                            loadAreaName(fullProcedure.area)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("MainViewModel", "Error loading full procedure: ${e.message}")
+                    }
+                }
+            }
+        } else {
+            _selectedProcedure.value = null
+        }
     }
+
 
     fun clearSelectedProcedure() {
         _selectedProcedure.value = null
@@ -558,6 +634,9 @@ class MainViewModel : ViewModel() {
                     .await()
                 val diagnosesList = documents.map { it.toObject(Diagnosis::class.java) }
                 _diagnoses.value = diagnosesList
+
+                // Añadir los diagnósticos cargados a la lista completa
+                _fullDiagnoses.update { it + diagnosesList }
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error fetching diagnoses by area: \${e.message}")
             }
@@ -573,6 +652,9 @@ class MainViewModel : ViewModel() {
                     .await()
                 val proceduresList = documents.map { it.toObject(Procedure::class.java) }
                 _procedures.value = proceduresList
+
+                // Añadir los procedimientos cargados a la lista completa
+                _fullProcedures.update { it + proceduresList }
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error fetching procedures by diagnosis: \${e.message}")
             }
@@ -588,6 +670,9 @@ class MainViewModel : ViewModel() {
                     .await()
                 val diagnosesList = documents.map { it.toObject(Diagnosis::class.java) }
                 _diagnoses.value = diagnosesList
+
+                // Añadir los diagnósticos cargados a la lista completa
+                _fullDiagnoses.update { it + diagnosesList }
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error fetching diagnoses by odontopediatria area: \${e.message}")
             }

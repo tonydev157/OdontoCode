@@ -368,8 +368,6 @@ fun SearchScreen(mainViewModel: MainViewModel, isAdmin: Boolean, onLogoutClick: 
     }
 }
 
-
-
 @Composable
 fun SearchDropdown(
     mainViewModel: MainViewModel,
@@ -406,6 +404,14 @@ fun SearchDropdown(
                             mainViewModel.updateSearchCriteria(criteria)
                             expanded = false
                             mainViewModel.saveSearchOption(context, criteria)
+
+                            // Lógica para cargar detalles como en el botón 'More'
+                            val selectedProcedure = mainViewModel.searchResults.value.firstOrNull()
+                            selectedProcedure?.let { procedure ->
+                                mainViewModel.selectProcedure(procedure)
+                                mainViewModel.loadAreaName(procedure.area)
+                                mainViewModel.loadDiagnosisData(procedure.diagnosis)
+                            }
                         },
                         text = { Text(criteria) }
                     )
@@ -414,7 +420,6 @@ fun SearchDropdown(
         }
     }
 }
-
 
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -481,6 +486,8 @@ fun SearchBarWithDropdown(
                 DropdownMenuItem(
                     onClick = {
                         mainViewModel.selectProcedure(result)
+                        mainViewModel.loadAreaName(result.area)
+                        mainViewModel.loadDiagnosisData(result.diagnosis)
                         isDropdownExpanded = false
                         focusManager.clearFocus()
                         keyboardController?.hide()
@@ -539,7 +546,6 @@ fun SearchBarWithDropdown(
     }
 }
 
-
 @Composable
 fun AreaDiagnosisList(
     areaList: List<Area>,
@@ -594,9 +600,13 @@ fun AreaDiagnosisList(
                                 procedure = procedureItem,
                                 onProcedureSelected = {
                                     mainViewModel.selectProcedure(procedureItem)
+                                    mainViewModel.loadAreaName(procedureItem.area)
+                                    mainViewModel.loadDiagnosisData(procedureItem.diagnosis)
                                 },
                                 onMoreSelected = {
                                     mainViewModel.selectProcedure(procedureItem)
+                                    mainViewModel.loadAreaName(procedureItem.area)
+                                    mainViewModel.loadDiagnosisData(procedureItem.diagnosis)
                                 },
                                 mainViewModel = mainViewModel
                             )
@@ -626,9 +636,13 @@ fun AreaDiagnosisList(
                                 procedure = procedureItem,
                                 onProcedureSelected = {
                                     mainViewModel.selectProcedure(procedureItem)
+                                    mainViewModel.loadAreaName(procedureItem.area)
+                                    mainViewModel.loadDiagnosisData(procedureItem.diagnosis)
                                 },
                                 onMoreSelected = {
                                     mainViewModel.selectProcedure(procedureItem)
+                                    mainViewModel.loadAreaName(procedureItem.area)
+                                    mainViewModel.loadDiagnosisData(procedureItem.diagnosis)
                                 },
                                 mainViewModel = mainViewModel
                             )
@@ -674,9 +688,13 @@ fun AreaDiagnosisList(
                                 procedure = procedureItem,
                                 onProcedureSelected = {
                                     mainViewModel.selectProcedure(procedureItem)
+                                    mainViewModel.loadAreaName(procedureItem.area)
+                                    mainViewModel.loadDiagnosisData(procedureItem.diagnosis)
                                 },
                                 onMoreSelected = {
                                     mainViewModel.selectProcedure(procedureItem)
+                                    mainViewModel.loadAreaName(procedureItem.area)
+                                    mainViewModel.loadDiagnosisData(procedureItem.diagnosis)
                                 },
                                 mainViewModel = mainViewModel
                             )
@@ -706,9 +724,13 @@ fun AreaDiagnosisList(
                                 procedure = procedureItem,
                                 onProcedureSelected = {
                                     mainViewModel.selectProcedure(procedureItem)
+                                    mainViewModel.loadAreaName(procedureItem.area)
+                                    mainViewModel.loadDiagnosisData(procedureItem.diagnosis)
                                 },
                                 onMoreSelected = {
                                     mainViewModel.selectProcedure(procedureItem)
+                                    mainViewModel.loadAreaName(procedureItem.area)
+                                    mainViewModel.loadDiagnosisData(procedureItem.diagnosis)
                                 },
                                 mainViewModel = mainViewModel
                             )
@@ -719,8 +741,6 @@ fun AreaDiagnosisList(
         }
     }
 }
-
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -779,7 +799,11 @@ fun AnimatedProcedureRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End
                     ) {
-                        TextButton(onClick = onMoreSelected) {
+                        TextButton(onClick = {
+                            onMoreSelected()
+                            mainViewModel.loadAreaName(procedure.area)
+                            mainViewModel.loadDiagnosisData(procedure.diagnosis)
+                        }) {
                             Text("More")
                         }
                     }
@@ -788,8 +812,6 @@ fun AnimatedProcedureRow(
         }
     }
 }
-
-
 
 @Composable
 fun AreaRow(area: Area, onAreaSelected: (Area) -> Unit) {
@@ -850,74 +872,62 @@ fun DiagnosisRow(
     }
 }
 
-
 @Composable
 fun ProcedureDetail(
     mainViewModel: MainViewModel,
     procedure: Procedure,
     onDismiss: () -> Unit
 ) {
-    // Estados observados desde el ViewModel
-    val favoriteProcedures by mainViewModel.favoriteProcedures.collectAsStateWithLifecycle()
-    val isFavorite = favoriteProcedures.contains(procedure.id)
     val areaName by mainViewModel.areaName.collectAsStateWithLifecycle()
     val diagnosisName by mainViewModel.diagnosisName.collectAsStateWithLifecycle()
     val diagnosisCIE10 by mainViewModel.diagnosisCIE10.collectAsStateWithLifecycle()
 
-    // Lanzar efectos para cargar los datos al abrir el detalle del procedimiento
-    LaunchedEffect(procedure.id) {
-        mainViewModel.loadAreaName(procedure.area)
-        mainViewModel.loadDiagnosisData(procedure.diagnosis)
-    }
+    val isLoading = areaName == "Cargando..." || diagnosisName == "Cargando..."
 
-    Surface(
-        modifier = Modifier.padding(16.dp),
-        shape = RoundedCornerShape(12.dp),
-        tonalElevation = 4.dp
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "Código de Procedimiento: ${procedure.cie10procedure}",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                IconButton(onClick = onDismiss) {
-                    Icon(Icons.Filled.Close, contentDescription = "Cerrar")
+    if (isLoading) {
+        // Mostrar un indicador de carga mientras los datos están siendo cargados
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    } else {
+        Surface(
+            modifier = Modifier.padding(16.dp),
+            shape = RoundedCornerShape(12.dp),
+            tonalElevation = 4.dp
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Código de Procedimiento: ${procedure.cie10procedure}",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Filled.Close, contentDescription = "Cerrar")
+                    }
                 }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Divider()
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+                Divider()
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = "Procedimiento: ${procedure.procedure}",
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
-            )
-            Text(text = "Diagnóstico: $diagnosisName", style = MaterialTheme.typography.bodyMedium)
-            Text(
-                text = "Código de Diagnóstico: $diagnosisCIE10",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(text = "Área: $areaName", style = MaterialTheme.typography.bodyMedium)
-
-            IconButton(onClick = {
-                mainViewModel.toggleFavorite(procedure.id)
-            }) {
-                Icon(
-                    painter = if (isFavorite) painterResource(id = R.drawable.ic_favorite) else painterResource(
-                        id = R.drawable.ic_favorite_border
-                    ),
-                    contentDescription = if (isFavorite) "Quitar de Favoritos" else "Agregar a Favoritos",
-                    tint = if (isFavorite) MaterialTheme.colorScheme.primary else Color.Gray
+                Text(
+                    text = "Procedimiento: ${procedure.procedure}",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
                 )
+                Text(text = "Diagnóstico: $diagnosisName", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    text = "Código de Diagnóstico: $diagnosisCIE10",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(text = "Área: $areaName", style = MaterialTheme.typography.bodyMedium)
             }
         }
     }
 }
-
-
-
-
