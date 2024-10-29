@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -47,6 +48,8 @@ import com.tonymen.odontocode.ui.theme.OdontoCodeTheme
 import com.tonymen.odontocode.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 
 class MainActivity : ComponentActivity() {
     private val mainViewModel: MainViewModel by viewModels()
@@ -443,17 +446,18 @@ fun SearchBarWithDropdown(
                     if (!focusState.isFocused) {
                         keyboardController?.hide()
                     }
-                },
+                }
+                .shadow(4.dp, shape = MaterialTheme.shapes.medium),
             singleLine = true,
-            textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface),
+            textStyle = LocalTextStyle.current.copy(fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface),
             keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(
                 onSearch = {
                     if (query.isNotBlank()) {
-                        mainViewModel.searchProcedures(query) // Corregido: Se eliminó searchCriteria
+                        mainViewModel.searchProcedures(query)
                         isDropdownExpanded = true
                     } else {
-                        mainViewModel.clearSearchResults() // Asegúrate de haber añadido esta función al MainViewModel
+                        mainViewModel.clearSearchResults()
                     }
                     focusManager.clearFocus()
                     keyboardController?.hide()
@@ -470,7 +474,8 @@ fun SearchBarWithDropdown(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 200.dp)
+                .heightIn(max = 300.dp) // Aumentar la altura máxima de la barra desplegable
+                .padding(horizontal = 8.dp) // Añadir un pequeño padding horizontal para mejorar el diseño
         ) {
             searchResults.forEach { result ->
                 DropdownMenuItem(
@@ -481,23 +486,50 @@ fun SearchBarWithDropdown(
                         keyboardController?.hide()
                     },
                     text = {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text(
-                                    result.cie10procedure,
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
-                                )
-                                Text(
-                                    result.procedure,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp), // Añadir un padding vertical para mejorar la separación
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(3f)) {
+                                    Text(
+                                        result.cie10procedure, // Mostrando CIE-10 en una línea
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 18.sp // Aumentar ligeramente el tamaño de la fuente
+                                        )
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        result.diagnosis, // Mostrando Diagnosis en la siguiente línea
+                                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 16.sp)
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        result.procedure,
+                                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp)
+                                    )
+                                }
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .wrapContentWidth(Alignment.CenterHorizontally)
+                                ) {
+                                    Text(
+                                        combinedAreaList.associateBy { it.id }[result.area]?.name
+                                            ?: "Área no disponible",
+                                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
                             }
-                            Text(
-                                combinedAreaList.associateBy { it.id }[result.area]?.name ?: "Área no disponible",
-                                style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
+                            Divider(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
                             )
                         }
                     }
@@ -566,9 +598,7 @@ fun AreaDiagnosisList(
                                 onMoreSelected = {
                                     mainViewModel.selectProcedure(procedureItem)
                                 },
-                                onToggleFavorite = { procedureId ->
-                                    mainViewModel.toggleFavorite(procedureId)
-                                }
+                                mainViewModel = mainViewModel
                             )
                         }
                     }
@@ -576,7 +606,7 @@ fun AreaDiagnosisList(
 
                 val proceduresWithoutDiagnosis = procedures.filter { it.diagnosis == "N/A" && it.area == area.id }
                 if (proceduresWithoutDiagnosis.isNotEmpty()) {
-                    val diagnosisId = "SinEspecificar_${area.id}"
+                    val diagnosisId = "SinEspecificar_\${area.id}"
                     DiagnosisRow(
                         diagnosis = Diagnosis(
                             id = diagnosisId,
@@ -600,9 +630,7 @@ fun AreaDiagnosisList(
                                 onMoreSelected = {
                                     mainViewModel.selectProcedure(procedureItem)
                                 },
-                                onToggleFavorite = { procedureId ->
-                                    mainViewModel.toggleFavorite(procedureId)
-                                }
+                                mainViewModel = mainViewModel
                             )
                         }
                     }
@@ -650,9 +678,7 @@ fun AreaDiagnosisList(
                                 onMoreSelected = {
                                     mainViewModel.selectProcedure(procedureItem)
                                 },
-                                onToggleFavorite = { procedureId ->
-                                    mainViewModel.toggleFavorite(procedureId)
-                                }
+                                mainViewModel = mainViewModel
                             )
                         }
                     }
@@ -660,7 +686,7 @@ fun AreaDiagnosisList(
 
                 val proceduresWithoutDiagnosis = procedures.filter { it.diagnosis == "N/A" && it.area == area.id }
                 if (proceduresWithoutDiagnosis.isNotEmpty()) {
-                    val diagnosisId = "SinEspecificar_${area.id}"
+                    val diagnosisId = "SinEspecificar_\${area.id}"
                     DiagnosisRow(
                         diagnosis = Diagnosis(
                             id = diagnosisId,
@@ -684,9 +710,7 @@ fun AreaDiagnosisList(
                                 onMoreSelected = {
                                     mainViewModel.selectProcedure(procedureItem)
                                 },
-                                onToggleFavorite = { procedureId ->
-                                    mainViewModel.toggleFavorite(procedureId)
-                                }
+                                mainViewModel = mainViewModel
                             )
                         }
                     }
@@ -698,15 +722,17 @@ fun AreaDiagnosisList(
 
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimatedProcedureRow(
     procedure: Procedure,
     onProcedureSelected: (Procedure) -> Unit,
     onMoreSelected: () -> Unit,
-    onToggleFavorite: (String) -> Unit
+    mainViewModel: MainViewModel
 ) {
     var expanded by remember { mutableStateOf(false) }
-    var isFavorite by remember { mutableStateOf(false) }
+    val favoriteProcedures by mainViewModel.favoriteProcedures.collectAsStateWithLifecycle()
+    val isFavorite = favoriteProcedures.contains(procedure.id)
 
     Surface(
         onClick = { expanded = !expanded },
@@ -735,7 +761,7 @@ fun AnimatedProcedureRow(
                     style = MaterialTheme.typography.bodyLarge
                 )
 
-                IconButton(onClick = { onToggleFavorite(procedure.id) }) {
+                IconButton(onClick = { mainViewModel.toggleFavorite(procedure.id) }) {
                     Icon(
                         painter = if (isFavorite) painterResource(id = R.drawable.ic_favorite) else painterResource(
                             id = R.drawable.ic_favorite_border
@@ -763,93 +789,7 @@ fun AnimatedProcedureRow(
     }
 }
 
-@Composable
-fun SearchBarWithDropdown(
-    query: String,
-    searchResults: List<Procedure>,
-    onQueryChange: (String) -> Unit,
-    onSearch: () -> Unit,
-    onResultSelected: (Procedure) -> Unit,
-    isDropdownExpanded: Boolean,
-    onDismissDropdown: () -> Unit,
-    focusRequester: FocusRequester,
-    keyboardController: SoftwareKeyboardController?,
-    areaMap: Map<String, Area>
-) {
-    val focusManager = LocalFocusManager.current
 
-    Column {
-        OutlinedTextField(
-            value = query,
-            onValueChange = onQueryChange,
-            label = { Text("Buscador") },
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)
-                .onFocusChanged { focusState ->
-                    if (!focusState.isFocused) {
-                        keyboardController?.hide() // Ocultar el teclado al perder el foco
-                    }
-                },
-            singleLine = true,
-            textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface),
-            keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(
-                onSearch = {
-                    onSearch()
-                    focusManager.clearFocus() // Limpiar el foco al buscar
-                    keyboardController?.hide() // Ocultar el teclado al buscar
-                }
-            )
-        )
-
-        // Lógica para mostrar el menú desplegable de resultados
-        DropdownMenu(
-            expanded = isDropdownExpanded,
-            onDismissRequest = {
-                onDismissDropdown()
-                focusManager.clearFocus() // Limpiar el foco al cerrar el menú desplegable
-                keyboardController?.hide() // Ocultar el teclado si se hace clic fuera del menú desplegable
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(max = 200.dp)
-        ) {
-            searchResults.forEach { result ->
-                DropdownMenuItem(
-                    onClick = {
-                        onResultSelected(result)
-                        onDismissDropdown() // Cerrar el menú desplegable después de seleccionar un resultado
-                        focusManager.clearFocus() // Limpiar el foco cuando se selecciona un resultado
-                        keyboardController?.hide() // Ocultar el teclado al seleccionar un resultado
-                    },
-                    text = {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text(
-                                    result.cie10procedure,
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
-                                )
-                                Text(
-                                    result.procedure,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                            Text(
-                                areaMap[result.area]?.name ?: "Área no disponible",
-                                style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray)
-                            )
-                        }
-                    }
-                )
-            }
-        }
-    }
-}
 
 @Composable
 fun AreaRow(area: Area, onAreaSelected: (Area) -> Unit) {
@@ -910,79 +850,6 @@ fun DiagnosisRow(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AnimatedProcedureRow(
-    procedure: Procedure,
-    onProcedureSelected: (Procedure) -> Unit,
-    onMoreSelected: () -> Unit,
-    mainViewModel: MainViewModel
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val isFavorite by mainViewModel.isFavorite.collectAsStateWithLifecycle()
-
-    LaunchedEffect(procedure.id) {
-        mainViewModel.loadFavoriteState(procedure.id)
-    }
-
-    fun toggleFavoriteStatus() {
-        mainViewModel.toggleFavorite(procedure.id)
-    }
-
-    Surface(
-        onClick = { expanded = !expanded },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-            .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(12.dp),
-        tonalElevation = 4.dp
-    ) {
-        Column {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                Text(
-                    procedure.cie10procedure,
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Text(
-                    procedure.procedure,
-                    modifier = Modifier.weight(2f),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-
-                IconButton(onClick = { toggleFavoriteStatus() }) {
-                    Icon(
-                        painter = if (isFavorite) painterResource(id = R.drawable.ic_favorite) else painterResource(
-                            id = R.drawable.ic_favorite_border
-                        ),
-                        contentDescription = if (isFavorite) "Quitar de Favoritos" else "Agregar a Favoritos",
-                        tint = if (isFavorite) MaterialTheme.colorScheme.primary else Color.Gray
-                    )
-                }
-            }
-
-            AnimatedVisibility(visible = expanded) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        TextButton(onClick = { onMoreSelected() }) {
-                            Text("More")
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
 
 @Composable
 fun ProcedureDetail(
@@ -991,14 +858,14 @@ fun ProcedureDetail(
     onDismiss: () -> Unit
 ) {
     // Estados observados desde el ViewModel
-    val isFavorite by mainViewModel.isFavorite.collectAsStateWithLifecycle()
+    val favoriteProcedures by mainViewModel.favoriteProcedures.collectAsStateWithLifecycle()
+    val isFavorite = favoriteProcedures.contains(procedure.id)
     val areaName by mainViewModel.areaName.collectAsStateWithLifecycle()
     val diagnosisName by mainViewModel.diagnosisName.collectAsStateWithLifecycle()
     val diagnosisCIE10 by mainViewModel.diagnosisCIE10.collectAsStateWithLifecycle()
 
     // Lanzar efectos para cargar los datos al abrir el detalle del procedimiento
     LaunchedEffect(procedure.id) {
-        mainViewModel.loadFavoriteState(procedure.id)
         mainViewModel.loadAreaName(procedure.area)
         mainViewModel.loadDiagnosisData(procedure.diagnosis)
     }
@@ -1014,11 +881,11 @@ fun ProcedureDetail(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Código de Procedimiento: \${procedure.cie10procedure}",
+                    text = "Código de Procedimiento: ${procedure.cie10procedure}",
                     style = MaterialTheme.typography.titleMedium
                 )
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Filled.Close, contentDescription = "Close")
+                    Icon(Icons.Filled.Close, contentDescription = "Cerrar")
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -1026,15 +893,15 @@ fun ProcedureDetail(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Procedimiento: \${procedure.procedure}",
+                text = "Procedimiento: ${procedure.procedure}",
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
             )
-            Text(text = "Diagnóstico: \$diagnosisName", style = MaterialTheme.typography.bodyMedium)
+            Text(text = "Diagnóstico: $diagnosisName", style = MaterialTheme.typography.bodyMedium)
             Text(
-                text = "Código de Diagnóstico: \$diagnosisCIE10",
+                text = "Código de Diagnóstico: $diagnosisCIE10",
                 style = MaterialTheme.typography.bodyMedium
             )
-            Text(text = "Área: \$areaName", style = MaterialTheme.typography.bodyMedium)
+            Text(text = "Área: $areaName", style = MaterialTheme.typography.bodyMedium)
 
             IconButton(onClick = {
                 mainViewModel.toggleFavorite(procedure.id)
@@ -1050,3 +917,7 @@ fun ProcedureDetail(
         }
     }
 }
+
+
+
+

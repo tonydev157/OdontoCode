@@ -5,12 +5,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.tonymen.odontocode.data.Diagnosis
 import com.tonymen.odontocode.data.Favorite
 import com.tonymen.odontocode.data.Procedure
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class FavoritesViewModel : ViewModel() {
 
@@ -31,53 +34,69 @@ class FavoritesViewModel : ViewModel() {
     private val _favoriteIds = MutableStateFlow<Set<String>>(emptySet())
     val favoriteIds: StateFlow<Set<String>> = _favoriteIds
 
+    // StateFlow para mantener el estado temporal del corazón
+    private val _tempFavoriteIds = MutableStateFlow<Set<String>>(emptySet())
+    val tempFavoriteIds: StateFlow<Set<String>> = _tempFavoriteIds
+
+    private var favoriteListener: ListenerRegistration? = null
+
     init {
-        fetchUserFavorites()
+        fetchUserFavoritesRealtime()
     }
 
-    // Función para cargar los procedimientos favoritos del usuario
-    private fun fetchUserFavorites() {
+    override fun onCleared() {
+        super.onCleared()
+        favoriteListener?.remove()
+    }
+
+    // Función para cargar los procedimientos favoritos del usuario en tiempo real
+    private fun fetchUserFavoritesRealtime() {
         userId?.let { userId ->
             val userFavoritesRef = firestore.collection("userFavorites").document(userId)
 
-            userFavoritesRef.get()
-                .addOnSuccessListener { document ->
-                    if (document.exists()) {
-                        val favorite = document.toObject(Favorite::class.java)
-                        val procedureIds = favorite?.procedureIds ?: emptyList()
+            favoriteListener = userFavoritesRef.addSnapshotListener { document, e ->
+                if (e != null) {
+                    Log.e("FavoritesViewModel", "Error al escuchar los favoritos", e)
+                    return@addSnapshotListener
+                }
 
-                        _favoriteIds.value = procedureIds.toSet()
+                if (document != null && document.exists()) {
+                    val favorite = document.toObject(Favorite::class.java)
+                    val procedureIds = favorite?.procedureIds ?: emptyList()
 
-                        if (procedureIds.isNotEmpty()) {
-                            firestore.collection("procedures")
-                                .whereIn("id", procedureIds)
-                                .get()
-                                .addOnSuccessListener { procedureDocs ->
-                                    val procedures = procedureDocs.map { it.toObject(Procedure::class.java) }
-                                    _favoriteProcedures.value = procedures
-                                    _filteredFavorites.value = procedures
+                    _favoriteIds.value = procedureIds.toSet()
+                    _tempFavoriteIds.value = procedureIds.toSet()
+
+                    if (procedureIds.isNotEmpty()) {
+                        firestore.collection("procedures")
+                            .whereIn("id", procedureIds)
+                            .get()
+                            .addOnSuccessListener { procedureDocs ->
+                                val procedures = procedureDocs.map { it.toObject(Procedure::class.java) }
+                                _favoriteProcedures.value = procedures
+                                _filteredFavorites.value = procedures
+
+                                // Cargar detalles de diagnósticos y áreas
+                                procedures.forEach { procedure ->
+                                    loadDiagnosisDetails(procedure.diagnosis)
                                 }
-                                .addOnFailureListener { e ->
-                                    Log.e("FavoritesViewModel", "Error al cargar procedimientos favoritos", e)
-                                    _favoriteProcedures.value = emptyList()
-                                    _filteredFavorites.value = emptyList()
-                                }
-                        } else {
-                            Log.d("FavoritesViewModel", "No hay procedimientos favoritos para este usuario.")
-                            _favoriteProcedures.value = emptyList()
-                            _filteredFavorites.value = emptyList()
-                        }
+                            }
+                            .addOnFailureListener { e ->
+                                Log.e("FavoritesViewModel", "Error al cargar procedimientos favoritos", e)
+                                _favoriteProcedures.value = emptyList()
+                                _filteredFavorites.value = emptyList()
+                            }
                     } else {
-                        Log.d("FavoritesViewModel", "El documento de favoritos no existe para este usuario.")
+                        Log.d("FavoritesViewModel", "No hay procedimientos favoritos para este usuario.")
                         _favoriteProcedures.value = emptyList()
                         _filteredFavorites.value = emptyList()
                     }
-                }
-                .addOnFailureListener { e ->
-                    Log.e("FavoritesViewModel", "Error al cargar favoritos", e)
+                } else {
+                    Log.d("FavoritesViewModel", "El documento de favoritos no existe para este usuario.")
                     _favoriteProcedures.value = emptyList()
                     _filteredFavorites.value = emptyList()
                 }
+            }
         }
     }
 
@@ -85,6 +104,13 @@ class FavoritesViewModel : ViewModel() {
     fun toggleFavorite(procedureId: String) {
         userId?.let { userId ->
             val favoriteRef = firestore.collection("userFavorites").document(userId)
+
+            // Actualizar el estado local del ícono inmediatamente sin eliminar de la lista
+            if (_tempFavoriteIds.value.contains(procedureId)) {
+                _tempFavoriteIds.value = _tempFavoriteIds.value - procedureId
+            } else {
+                _tempFavoriteIds.value = _tempFavoriteIds.value + procedureId
+            }
 
             favoriteRef.get().addOnSuccessListener { document ->
                 if (document.exists()) {
@@ -97,20 +123,19 @@ class FavoritesViewModel : ViewModel() {
                         updatedFavorites.add(procedureId)
                     }
 
-                    // Actualiza Firebase
+                    // Actualiza Firebase en segundo plano
                     favoriteRef.update("procedureIds", updatedFavorites)
                         .addOnSuccessListener {
-                            Log.d("FavoritesViewModel", "Favorito actualizado")
-
-                            // Actualizar el estado local sin necesidad de volver a cargar desde Firestore
-                            if (_favoriteIds.value.contains(procedureId)) {
-                                _favoriteIds.value = _favoriteIds.value - procedureId
-                            } else {
-                                _favoriteIds.value = _favoriteIds.value + procedureId
-                            }
+                            Log.d("FavoritesViewModel", "Favorito actualizado correctamente")
                         }
                         .addOnFailureListener { e ->
-                            Log.e("FavoritesViewModel", "Error al actualizar favorito", e)
+                            Log.e("FavoritesViewModel", "Error al actualizar favorito en Firestore", e)
+                            // Revertir el estado temporal si la actualización falla
+                            if (updatedFavorites.contains(procedureId)) {
+                                _tempFavoriteIds.value = _tempFavoriteIds.value + procedureId
+                            } else {
+                                _tempFavoriteIds.value = _tempFavoriteIds.value - procedureId
+                            }
                         }
                 }
             }
@@ -131,20 +156,34 @@ class FavoritesViewModel : ViewModel() {
         }
     }
 
-    // Función para cargar los detalles del diagnóstico
+    // Función para cargar los detalles del diagnóstico (de ambas colecciones)
     fun loadDiagnosisDetails(diagnosisId: String) {
-        firestore.collection("diagnosis")
-            .document(diagnosisId)
-            .get()
-            .addOnSuccessListener { document ->
-                val diagnosis = document.toObject(Diagnosis::class.java)
-                if (diagnosis != null) {
-                    // Actualizar los detalles del diagnóstico en el StateFlow
-                    _diagnosisDetails.value = _diagnosisDetails.value + (diagnosisId to diagnosis)
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val diagnosis = firestore.collection("diagnosis").document(diagnosisId).get().await().toObject(Diagnosis::class.java)
+                    ?: firestore.collection("diagnosisodontopediatria").document(diagnosisId).get().await().toObject(Diagnosis::class.java)
+
+                diagnosis?.let {
+                    _diagnosisDetails.value = _diagnosisDetails.value + (diagnosisId to it)
                 }
-            }
-            .addOnFailureListener { e ->
+            } catch (e: Exception) {
                 Log.e("FavoritesViewModel", "Error al cargar los detalles del diagnóstico", e)
             }
+        }
+    }
+
+    // Función para cargar los detalles del área (de ambas colecciones)
+    fun loadAreaDetails(areaId: String, onResult: (String?) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val area = firestore.collection("areas").document(areaId).get().await().getString("name")
+                    ?: firestore.collection("areasodontopediatria").document(areaId).get().await().getString("name")
+
+                onResult(area)
+            } catch (e: Exception) {
+                Log.e("FavoritesViewModel", "Error al cargar los detalles del área", e)
+                onResult(null)
+            }
+        }
     }
 }

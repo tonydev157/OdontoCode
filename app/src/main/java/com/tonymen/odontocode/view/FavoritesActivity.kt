@@ -14,7 +14,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -30,7 +29,7 @@ class FavoritesActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             OdontoCodeTheme {
-                val favoriteProcedures by viewModel.favoriteProcedures.collectAsStateWithLifecycle()
+                val favoriteProcedures by viewModel.filteredFavorites.collectAsStateWithLifecycle()
                 var query by remember { mutableStateOf("") }
 
                 Scaffold(
@@ -88,7 +87,10 @@ class FavoritesActivity : ComponentActivity() {
                             modifier = Modifier.fillMaxSize()
                         ) {
                             items(favoriteProcedures) { favorite ->
-                                FavoriteProcedureItem(favorite = favorite, viewModel = viewModel)
+                                FavoriteProcedureItem(
+                                    favorite = favorite,
+                                    viewModel = viewModel
+                                )
                             }
                         }
                     }

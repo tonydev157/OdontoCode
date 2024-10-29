@@ -104,7 +104,7 @@ class MainViewModel : ViewModel() {
     private val _backPressedOnce = MutableStateFlow(false)
     val backPressedOnce: StateFlow<Boolean> = _backPressedOnce
 
-    private var currentJob: Job? = null
+    private var searchJob: Job? = null
 
     private val _expandedArea = MutableStateFlow<String?>(null)
     val expandedArea: StateFlow<String?> = _expandedArea
@@ -112,9 +112,16 @@ class MainViewModel : ViewModel() {
     private val _expandedDiagnosis = MutableStateFlow<String?>(null)
     val expandedDiagnosis: StateFlow<String?> = _expandedDiagnosis
 
+    private val _favoriteProcedures = MutableStateFlow<Set<String>>(emptySet())
+    val favoriteProcedures: StateFlow<Set<String>> = _favoriteProcedures
+    private val _favoriteProcedureStates = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    val favoriteProcedureStates: StateFlow<Map<String, Boolean>> = _favoriteProcedureStates
+
+
     init {
         viewModelScope.launch(Dispatchers.IO) {
             loadInitialData()
+            listenToFavoritesChanges()
         }
     }
 
@@ -140,7 +147,15 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    // Search Procedures
+    // Search Procedures with Debounce
+    fun searchProceduresWithDebounce(query: String) {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            delay(500) // Ajusta el valor según prefieras
+            searchProcedures(query)
+        }
+    }
+
     fun updateSearchCriteria(criteria: String) {
         _searchCriteria.value = criteria
     }
@@ -148,9 +163,9 @@ class MainViewModel : ViewModel() {
     fun searchProcedures(query: String) {
         val normalizedQuery = normalizeString(query)
         val searchOption = _searchCriteria.value
-        currentJob?.cancel()  // Cancelar la búsqueda anterior si la hay
+        searchJob?.cancel()  // Cancelar la búsqueda anterior si la hay
 
-        currentJob = viewModelScope.launch(Dispatchers.IO) {
+        searchJob = viewModelScope.launch(Dispatchers.IO) {
             try {
                 // Restablecer estados antes de iniciar la búsqueda
                 _isLoading.value = true
@@ -161,11 +176,20 @@ class MainViewModel : ViewModel() {
                 // Realizar el filtrado de los procedimientos
                 val filteredProcedures = filterProcedures(normalizedQuery, searchOption)
 
+                // Obtener los nombres de los diagnósticos usando los IDs de los procedimientos filtrados
+                val updatedProcedures = filteredProcedures.map { procedure ->
+                    val diagnosis = _fullDiagnoses.value.find { it.id == procedure.diagnosis }
+                    procedure.copy(
+                        cie10procedure = "${procedure.cie10procedure} / ${diagnosis?.cie10diagnosis ?: "N/A"}",
+                        diagnosis = diagnosis?.name ?: "Diagnóstico no encontrado"
+                    )
+                }
+
                 // Actualizar el estado después de la búsqueda
                 _isLoading.value = false
                 _isSearching.value = false
-                _searchResults.value = filteredProcedures
-                _isEmptyResults.value = filteredProcedures.isEmpty()
+                _searchResults.value = updatedProcedures
+                _isEmptyResults.value = updatedProcedures.isEmpty()
 
                 // Solicitar limpiar el foco al finalizar la búsqueda
                 requestClearFocus()
@@ -177,10 +201,11 @@ class MainViewModel : ViewModel() {
                 _searchResults.value = emptyList()  // Limpiar resultados en caso de error
                 _isEmptyResults.value = true        // Mostrar que no hubo resultados
 
-                Log.e("MainViewModel", "Error en la búsqueda: \${e.message}")
+                Log.e("MainViewModel", "Error en la búsqueda: ${e.message}")
             }
         }
     }
+
 
     private fun filterProcedures(normalizedQuery: String, searchOption: String): List<Procedure> {
         return when (searchOption) {
@@ -245,29 +270,51 @@ class MainViewModel : ViewModel() {
         setBackPressedOnce(false)
     }
 
-    // Favorite Procedures
+    private fun listenToFavoritesChanges() {
+        val userId = auth.currentUser?.uid ?: return
+        firestore.collection("userFavorites")
+            .document(userId)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    Log.w("MainViewModel", "Listen failed.", e)
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null && snapshot.exists()) {
+                    val favorite = snapshot.toObject(Favorite::class.java)
+                    val procedureIds = favorite?.procedureIds?.toSet() ?: emptySet()
+                    _favoriteProcedures.value = procedureIds
+
+                    // Actualizamos el estado de cada procedimiento
+                    _favoriteProcedureStates.update {
+                        it.toMutableMap().apply {
+                            procedureIds.forEach { id ->
+                                this[id] = true
+                            }
+                        }
+                    }
+                }
+            }
+    }
+
+    // Actualizar el estado de favorito en Firestore
     fun toggleFavorite(procedureId: String) {
         val userId = auth.currentUser?.uid ?: return
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val favoritesRef = firestore.collection("userFavorites").document(userId)
                 val documentSnapshot = favoritesRef.get().await()
-                if (documentSnapshot.exists()) {
-                    val favorite = documentSnapshot.toObject(Favorite::class.java)
-                    val updatedProcedureIds = favorite?.procedureIds?.toMutableList() ?: mutableListOf()
-                    if (updatedProcedureIds.contains(procedureId)) {
-                        updatedProcedureIds.remove(procedureId)
-                    } else {
-                        updatedProcedureIds.add(procedureId)
-                    }
-                    favoritesRef.update("procedureIds", updatedProcedureIds).await()
+                val updatedProcedureIds = documentSnapshot.toObject(Favorite::class.java)?.procedureIds?.toMutableSet() ?: mutableSetOf()
+
+                if (updatedProcedureIds.contains(procedureId)) {
+                    updatedProcedureIds.remove(procedureId)
                 } else {
-                    val newFavorite = Favorite(procedureIds = listOf(procedureId))
-                    favoritesRef.set(newFavorite).await()
+                    updatedProcedureIds.add(procedureId)
                 }
-                loadFavoriteState(procedureId)
+
+                favoritesRef.update("procedureIds", updatedProcedureIds.toList()).await()
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error toggling favorite: \${e.message}")
+                Log.e("MainViewModel", "Error toggling favorite: ${e.message}")
             }
         }
     }
@@ -281,12 +328,27 @@ class MainViewModel : ViewModel() {
                     .get()
                     .await()
                 val favorite = documentSnapshot.toObject(Favorite::class.java)
-                _isFavorite.value = favorite?.procedureIds?.contains(procedureId) == true
+                _favoriteProcedureStates.update {
+                    it.toMutableMap().apply {
+                        this[procedureId] = favorite?.procedureIds?.contains(procedureId) == true
+                    }
+                }
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Error loading favorite state: \${e.message}")
+                Log.e("MainViewModel", "Error loading favorite state: ${e.message}")
             }
         }
     }
+    private suspend fun loadFavorites() {
+        val userId = auth.currentUser?.uid ?: return
+        try {
+            val document = firestore.collection("userFavorites").document(userId).get().await()
+            val favorite = document.toObject(Favorite::class.java)
+            _favoriteProcedures.value = favorite?.procedureIds?.toSet() ?: emptySet()
+        } catch (e: Exception) {
+            Log.e("MainViewModel", "Error loading favorites: ${e.message}")
+        }
+    }
+
 
     // Area & Diagnosis Loading
     fun loadAreaName(areaId: String) {
@@ -311,19 +373,13 @@ class MainViewModel : ViewModel() {
     fun loadDiagnosisData(diagnosisId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val diagnosisDocument = firestore.collection("diagnosis").document(diagnosisId).get().await()
-                val diagnosis = diagnosisDocument.toObject(Diagnosis::class.java)
+                val diagnosis = _fullDiagnoses.value.find { it.id == diagnosisId }
                 if (diagnosis != null) {
                     _diagnosisName.value = diagnosis.name
                     _diagnosisCIE10.value = diagnosis.cie10diagnosis
                 } else {
-                    val odontopediatriaDocument = firestore.collection("diagnosisodontopediatria")
-                        .document(diagnosisId)
-                        .get()
-                        .await()
-                    val odontopediatriaDiagnosis = odontopediatriaDocument.toObject(Diagnosis::class.java)
-                    _diagnosisName.value = odontopediatriaDiagnosis?.name ?: "Diagnóstico no encontrado"
-                    _diagnosisCIE10.value = odontopediatriaDiagnosis?.cie10diagnosis ?: "CIE-10 no encontrado"
+                    _diagnosisName.value = "Diagnóstico no encontrado"
+                    _diagnosisCIE10.value = "CIE-10 no encontrado"
                 }
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error loading diagnosis data: \${e.message}")
@@ -354,16 +410,6 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    private suspend fun loadFavorites() {
-        val userId = auth.currentUser?.uid ?: return
-        try {
-            val document = firestore.collection("userFavorites").document(userId).get().await()
-            val favorite = document.toObject(Favorite::class.java)
-            _favorites.value = favorite?.procedureIds ?: emptyList()
-        } catch (e: Exception) {
-            Log.e("MainViewModel", "Error loading favorites: \${e.message}")
-        }
-    }
 
     private suspend fun loadDiagnoses() {
         val diagnosesList = mutableListOf<Diagnosis>()

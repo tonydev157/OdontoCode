@@ -11,15 +11,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.firebase.firestore.FirebaseFirestore
 import com.tonymen.odontocode.R
-import com.tonymen.odontocode.data.Diagnosis
 import com.tonymen.odontocode.data.Procedure
 import com.tonymen.odontocode.viewmodel.FavoritesViewModel
 
 @Composable
 fun FavoriteProcedureItem(favorite: Procedure, viewModel: FavoritesViewModel) {
-    val isFavorite by viewModel.favoriteIds.collectAsStateWithLifecycle()
+    val isFavorite by viewModel.tempFavoriteIds.collectAsStateWithLifecycle()
     var areaName by remember { mutableStateOf("Cargando...") }
 
     val isCurrentlyFavorite = isFavorite.contains(favorite.id)
@@ -37,16 +35,9 @@ fun FavoriteProcedureItem(favorite: Procedure, viewModel: FavoritesViewModel) {
     }
 
     LaunchedEffect(favorite.area) {
-        FirebaseFirestore.getInstance().collection("areas")
-            .document(favorite.area)
-            .get()
-            .addOnSuccessListener { document ->
-                val area = document.getString("name")
-                areaName = area ?: "Área no encontrada"
-            }
-            .addOnFailureListener {
-                areaName = "Error al cargar área"
-            }
+        viewModel.loadAreaDetails(favorite.area) { areaNameResult ->
+            areaName = areaNameResult ?: "Área no encontrada"
+        }
     }
 
     // UI del elemento de favorito
@@ -101,6 +92,3 @@ fun FavoriteProcedureItem(favorite: Procedure, viewModel: FavoritesViewModel) {
         }
     }
 }
-
-
-
