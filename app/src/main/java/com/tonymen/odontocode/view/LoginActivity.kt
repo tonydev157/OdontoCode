@@ -14,7 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -49,12 +49,15 @@ class LoginActivity : ComponentActivity() {
                             Toast.makeText(this, "Correo o contraseña vacíos", Toast.LENGTH_LONG).show()
                         } else {
                             isLoading = true
-                            loginUser(email, password)
+                            loginUser(email.trim(), password)
                         }
                     },
                     onRegisterClick = {
                         val intent = Intent(this, RegisterActivity::class.java)
                         startActivity(intent)
+                    },
+                    onForgotPasswordClick = {
+                        isLoading = true
                     },
                     isLoading = isLoading
                 )
@@ -143,9 +146,6 @@ class LoginActivity : ComponentActivity() {
             }
     }
 
-
-
-
     private fun navigateToMainActivity() {
         startActivity(Intent(this, MainActivity::class.java))
         finish()
@@ -164,11 +164,13 @@ class LoginActivity : ComponentActivity() {
 fun LoginScreen(
     onLoginClick: (String, String) -> Unit = { _, _ -> },
     onRegisterClick: () -> Unit = {},
+    onForgotPasswordClick: () -> Unit = {},
     isLoading: Boolean
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
 
     // Fondos adaptados a ambos temas
     val backgroundColor = MaterialTheme.colorScheme.background
@@ -209,9 +211,7 @@ fun LoginScreen(
             OutlinedTextField(
                 value = email,
                 onValueChange = {
-                    if (it.length <= 50) {
-                        email = it
-                    }
+                    email = it.trim().take(50) // Eliminar espacios y limitar a 50 caracteres
                 },
                 label = { Text("Correo Electrónico", color = textColor) }, // Adaptado al color del tema
                 singleLine = true,
@@ -238,7 +238,7 @@ fun LoginScreen(
                         password = it
                     }
                 },
-                label = { Text("Contraseña", color = textColor) }, // Adaptado al tema
+                label = { Text("Contraseña", color = textColor) }, // Adaptado al color del tema
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -284,14 +284,123 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                TextButton(
+                Button(
                     onClick = onRegisterClick,
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
                     enabled = !isLoading
                 ) {
-                    Text("Crear Cuenta", style = MaterialTheme.typography.bodyLarge, color = textColor)
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_person),
+                        contentDescription = "Register Icon",
+                        tint = MaterialTheme.colorScheme.onTertiary,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text("Crear Cuenta", color = MaterialTheme.colorScheme.onTertiary)
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = { showForgotPasswordDialog = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                    enabled = !isLoading
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_help),
+                        contentDescription = "Forgot Password Icon",
+                        tint = MaterialTheme.colorScheme.onError,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text("Olvidé mi contraseña", color = MaterialTheme.colorScheme.onError)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            if (showForgotPasswordDialog) {
+                ForgotPasswordDialog(
+                    context = LocalContext.current,
+                    email = email,
+                    onEmailChange = { email = it.trim() },
+                    onConfirm = {
+                        showForgotPasswordDialog = false
+                    },
+                    onDismiss = {
+                        showForgotPasswordDialog = false
+                    }
+                )
             }
         }
     }
+}
+
+@Composable
+fun ForgotPasswordDialog(
+    context: android.content.Context,
+    email: String,
+    onEmailChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = "Restablecer Contraseña")
+        },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = onEmailChange,
+                    label = { Text("Correo Electrónico") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (email.isNotBlank()) {
+                        FirebaseAuth.getInstance().sendPasswordResetEmail(email)
+                            .addOnSuccessListener {
+                                Toast.makeText(
+                                    context,
+                                    "Correo de restablecimiento enviado",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                            .addOnFailureListener {
+                                Toast.makeText(
+                                    context,
+                                    "Error al enviar el correo: ${it.message}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                    } else {
+                        Toast.makeText(
+                            context,
+                            "Ingrese un correo válido",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    onConfirm()
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Text("Aceptar", color = MaterialTheme.colorScheme.onPrimary)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
 }

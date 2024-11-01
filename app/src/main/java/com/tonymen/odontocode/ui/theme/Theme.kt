@@ -18,11 +18,13 @@ private val LightColorScheme = lightColorScheme(
     surface = LightSurface,
     onSurface = LightOnSurface,
     onBackground = LightOnBackground,
-    surfaceVariant = Transparent  // Color transparente en lugares donde sea necesario
-
+    surfaceVariant = Transparent,
+    tertiary = LightRegisterButtonColor,
+    onTertiary = LightOnRegisterButtonColor,
+    error = LightForgotPasswordButtonColor,
+    onError = LightOnForgotPasswordButtonColor
 )
 
-// Definición del esquema de colores para el tema oscuro
 private val DarkColorScheme = darkColorScheme(
     primary = DarkPrimary,
     onPrimary = DarkOnPrimary,
@@ -34,8 +36,11 @@ private val DarkColorScheme = darkColorScheme(
     surface = DarkSurface,
     onSurface = DarkOnSurface,
     onBackground = DarkOnBackground,
-    surfaceVariant = Transparent  // Color transparente en lugares donde sea necesario
-
+    surfaceVariant = Transparent,
+    tertiary = DarkRegisterButtonColor,
+    onTertiary = DarkOnRegisterButtonColor,
+    error = DarkForgotPasswordButtonColor,
+    onError = DarkOnForgotPasswordButtonColor
 )
 
 // Función del tema de la aplicación

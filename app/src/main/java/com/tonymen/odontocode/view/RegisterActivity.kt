@@ -46,10 +46,17 @@ class RegisterActivity : ComponentActivity() {
                     onRegisterClick = { name, email, idCard, password ->
                         isLoading = true
                         if (isValidCedula(idCard)) {
-                            registerUser(name, email, idCard, password) { success ->
-                                isLoading = false
-                                if (!success) {
-                                    Toast.makeText(this, "Error al registrar usuario", Toast.LENGTH_LONG).show()
+                            checkCedulaUnique(idCard) { isUnique ->
+                                if (isUnique) {
+                                    registerUser(name, email.trim(), idCard, password) { success ->
+                                        isLoading = false
+                                        if (!success) {
+                                            Toast.makeText(this, "Error al registrar usuario", Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                } else {
+                                    isLoading = false
+                                    Toast.makeText(this, "La cédula ya está registrada", Toast.LENGTH_LONG).show()
                                 }
                             }
                         } else {
@@ -57,10 +64,24 @@ class RegisterActivity : ComponentActivity() {
                             Toast.makeText(this, "Cédula inválida", Toast.LENGTH_LONG).show()
                         }
                     },
-                    isLoading = isLoading
+                    isLoading = isLoading,
+                    checkCedulaUnique = ::checkCedulaUnique
                 )
             }
         }
+    }
+
+    private fun checkCedulaUnique(idCard: String, onComplete: (Boolean) -> Unit) {
+        firestore.collection("users")
+            .whereEqualTo("ci", idCard)
+            .get()
+            .addOnSuccessListener { documents ->
+                onComplete(documents.isEmpty) // Si no hay documentos, la cédula es única
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "Error al verificar la cédula", Toast.LENGTH_LONG).show()
+                onComplete(false)
+            }
     }
 
     private fun registerUser(
@@ -107,14 +128,31 @@ class RegisterActivity : ComponentActivity() {
 }
 
 @Composable
-fun RegisterScreen(onRegisterClick: (String, String, String, String) -> Unit, isLoading: Boolean) {
+fun RegisterScreen(
+    onRegisterClick: (String, String, String, String) -> Unit,
+    isLoading: Boolean,
+    checkCedulaUnique: (String, (Boolean) -> Unit) -> Unit
+) {
     var name by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var idCard by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
+    var isCedulaValid by rememberSaveable { mutableStateOf(true) }
+    var isCedulaUnique by rememberSaveable { mutableStateOf(true) }
 
     val context = LocalContext.current
+
+    LaunchedEffect(idCard) {
+        if (isValidCedula(idCard)) {
+            checkCedulaUnique(idCard) { isUnique ->
+                isCedulaUnique = isUnique
+            }
+        } else {
+            isCedulaUnique = true // No mostrar error de unicidad si la cédula es inválida
+        }
+        isCedulaValid = isValidCedula(idCard)
+    }
 
     Surface(
         modifier = Modifier
@@ -171,7 +209,7 @@ fun RegisterScreen(onRegisterClick: (String, String, String, String) -> Unit, is
             // Correo Electrónico
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = { email = it.trimEnd() },
                 label = { Text("Correo Electrónico") },
                 singleLine = true,
                 modifier = Modifier
@@ -212,7 +250,7 @@ fun RegisterScreen(onRegisterClick: (String, String, String, String) -> Unit, is
                         tint = MaterialTheme.colorScheme.onBackground
                     )
                 },
-                trailingIcon = if (!isValidCedula(idCard) && idCard.isNotEmpty()) {
+                trailingIcon = if ((!isCedulaValid || !isCedulaUnique) && idCard.isNotEmpty()) {
                     {
                         Icon(
                             painter = painterResource(R.drawable.ic_error),
@@ -227,7 +265,7 @@ fun RegisterScreen(onRegisterClick: (String, String, String, String) -> Unit, is
             // Contraseña
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = { if (!it.contains(" ")) password = it },
                 label = { Text("Contraseña") },
                 singleLine = true,
                 modifier = Modifier
@@ -265,7 +303,12 @@ fun RegisterScreen(onRegisterClick: (String, String, String, String) -> Unit, is
                             Toast.LENGTH_LONG
                         ).show()
                     } else {
-                        onRegisterClick(name, email, idCard, password)
+                        isCedulaValid = isValidCedula(idCard)
+                        if (isCedulaValid) {
+                            onRegisterClick(name, email, idCard, password)
+                        } else {
+                            Toast.makeText(context, "Cédula inválida", Toast.LENGTH_LONG).show()
+                        }
                     }
                 },
                 modifier = Modifier
@@ -279,6 +322,7 @@ fun RegisterScreen(onRegisterClick: (String, String, String, String) -> Unit, is
         }
     }
 }
+
 // Función de validación de cédula que faltaba
 fun isValidCedula(idCard: String): Boolean {
     if (idCard.length != 10) return false

@@ -90,7 +90,18 @@ class MainActivity : ComponentActivity() {
                 val user = document.toObject(User::class.java)
                 if (user != null) {
                     val currentDeviceId = getCurrentDeviceId()
-                    if (user.activeDeviceId.isNullOrEmpty()) {
+                    if (!user.approved) {
+                        // Si el usuario no tiene acceso aprobado, cerrar la sesión y actualizar activeDeviceId
+                        firestore.collection("users").document(userId)
+                            .update("activeDeviceId", "")
+                            .addOnSuccessListener {
+                                showAccessDeniedDialog()
+                            }
+                            .addOnFailureListener {
+                                Toast.makeText(this, "Error al actualizar el dispositivo activo", Toast.LENGTH_LONG).show()
+                                cerrarSesionYRedirigir()
+                            }
+                    } else if (user.activeDeviceId.isNullOrEmpty()) {
                         // Si no hay un activeDeviceId configurado, actualizar con el dispositivo actual
                         firestore.collection("users").document(userId)
                             .update("activeDeviceId", currentDeviceId)
@@ -124,6 +135,17 @@ class MainActivity : ComponentActivity() {
         MaterialAlertDialogBuilder(this)
             .setTitle("Sesión inválida")
             .setMessage("La sesión está activa en otro dispositivo. Se cerrará la sesión actual.")
+            .setPositiveButton("Aceptar") { _, _ ->
+                cerrarSesionYRedirigir()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    private fun showAccessDeniedDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Acceso Denegado")
+            .setMessage("Tu acceso ha sido denegado. Se cerrará la sesión actual.")
             .setPositiveButton("Aceptar") { _, _ ->
                 cerrarSesionYRedirigir()
             }
@@ -880,8 +902,14 @@ fun DiagnosisRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
+                text = diagnosis.cie10diagnosis,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
                 text = diagnosis.name,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
+                modifier = Modifier.weight(2f),
+                style = MaterialTheme.typography.bodyLarge
             )
             IconButton(onClick = onExpandClick) {
                 Icon(

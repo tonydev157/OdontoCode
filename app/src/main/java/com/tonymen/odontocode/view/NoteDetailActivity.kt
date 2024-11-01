@@ -4,6 +4,14 @@ import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.lifecycle.lifecycleScope
+import androidx.room.Room
+import com.tonymen.odontocode.data.Note
+import com.tonymen.odontocode.data.local.NoteDatabase
+import com.tonymen.odontocode.ui.theme.OdontoCodeTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
@@ -20,17 +28,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.tonymen.odontocode.data.Note
-import com.tonymen.odontocode.ui.theme.OdontoCodeTheme
 import java.text.SimpleDateFormat
 import java.util.*
 
 class NoteDetailActivity : ComponentActivity() {
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+    private lateinit var noteDatabase: NoteDatabase
+    private var isSaving = false // Variable para evitar múltiples clics
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Inicializar la base de datos Room
+        noteDatabase = Room.databaseBuilder(
+            applicationContext,
+            NoteDatabase::class.java,
+            "note_database"
+        ).build()
 
         // Recuperar los datos del Intent (ID de la nota)
         val noteId = intent.getStringExtra("noteId") ?: ""  // ID de la nota (vacío si es nueva)
@@ -51,7 +66,10 @@ class NoteDetailActivity : ComponentActivity() {
                                     dateCreated = it.dateCreated,
                                     lastModified = it.lastModified,  // Pasamos la fecha de modificación
                                     onSave = { updatedNote, hasChanges ->
-                                        saveNoteAndExit(updatedNote, hasChanges)
+                                        if (!isSaving) {
+                                            isSaving = true
+                                            saveNoteAndExit(updatedNote, hasChanges)
+                                        }
                                     },
                                     onDiscard = { finish() }
                                 )
@@ -75,7 +93,10 @@ class NoteDetailActivity : ComponentActivity() {
                         dateCreated = System.currentTimeMillis(),
                         lastModified = System.currentTimeMillis(),
                         onSave = { newNote, hasChanges ->
-                            saveNoteAndExit(newNote, hasChanges)
+                            if (!isSaving) {
+                                isSaving = true
+                                saveNoteAndExit(newNote, hasChanges)
+                            }
                         },
                         onDiscard = { setResult(Activity.RESULT_CANCELED); finish() }
                     )
@@ -85,30 +106,48 @@ class NoteDetailActivity : ComponentActivity() {
     }
 
     private fun saveNoteAndExit(note: Note, hasChanges: Boolean) {
-        val noteRef = if (note.id.isEmpty()) {
-            firestore.collection("notes").document() // Crear un nuevo documento si no tiene ID
-        } else {
-            firestore.collection("notes").document(note.id) // Actualizar documento existente
-        }
-
-        // Si la nota es nueva, obtenemos el ID generado por Firestore
-        val updatedNote = if (note.id.isEmpty()) {
-            note.copy(id = noteRef.id, lastModified = note.dateCreated)  // Inicializamos lastModified con dateCreated
-        } else if (hasChanges) {
-            note.copy(lastModified = System.currentTimeMillis())  // Si hubo cambios, actualizamos lastModified
-        } else {
-            note // Si no hubo cambios, dejamos las fechas como están
-        }
-
-        noteRef.set(updatedNote)
-            .addOnSuccessListener {
-                setResult(Activity.RESULT_OK)
-                finish() // Cerrar la actividad después de guardar
+        lifecycleScope.launch {
+            val noteRef = if (note.id.isEmpty()) {
+                firestore.collection("notes").document() // Crear un nuevo documento si no tiene ID
+            } else {
+                firestore.collection("notes").document(note.id) // Actualizar documento existente
             }
-            .addOnFailureListener {
+
+            // Si la nota es nueva, obtenemos el ID generado por Firestore
+            val updatedNote = if (note.id.isEmpty()) {
+                note.copy(id = noteRef.id, lastModified = note.dateCreated)  // Inicializamos lastModified con dateCreated
+            } else if (hasChanges) {
+                note.copy(lastModified = System.currentTimeMillis())  // Si hubo cambios, actualizamos lastModified
+            } else {
+                note // Si no hubo cambios, dejamos las fechas como están
+            }
+
+            try {
+                // Guardar la nota localmente en Room
+                withContext(Dispatchers.IO) {
+                    noteDatabase.noteDao().insertOrUpdate(updatedNote.toEntity())
+                }
+
+                // Intentar guardar en Firestore
+                noteRef.set(updatedNote)
+                    .addOnSuccessListener {
+                        setResult(Activity.RESULT_OK)
+                        finish() // Cerrar la actividad después de guardar
+                    }
+                    .addOnFailureListener {
+                        // Si no se pudo guardar en Firestore, permitir al usuario salir
+                        isSaving = false
+                    }
+                    .addOnCompleteListener {
+                        isSaving = false // Permitir otro intento de guardado después de completar la operación
+                    }
+            } catch (e: Exception) {
+                // Manejar errores
+                isSaving = false
                 setResult(Activity.RESULT_CANCELED)
-                finish() // Cerrar la actividad si hubo un error
+                finish()
             }
+        }
     }
 }
 

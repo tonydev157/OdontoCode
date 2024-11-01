@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("org.jetbrains.kotlin.kapt")
     id("com.google.gms.google-services")
 }
 
@@ -97,6 +98,7 @@ dependencies {
     implementation(libs.androidx.runner)
     implementation(libs.androidx.espresso.core)
     implementation(libs.androidx.lifecycle.runtime.compose.android)
+    implementation(libs.androidx.room.ktx)
 
     // Testing dependencies
     testImplementation(libs.junit)
@@ -108,5 +110,15 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation (libs.firebase.firestore.ktx.v2410)
+
+    // Core AndroidX and Compose dependencies
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.activity.compose)
+
+
+    kapt("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.room:room-ktx:2.5.2")
+    implementation("androidx.room:room-runtime:2.6.1")
 
 }

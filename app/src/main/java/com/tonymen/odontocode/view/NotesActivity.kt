@@ -32,18 +32,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.lifecycleScope
 import com.tonymen.odontocode.data.Note
+import com.tonymen.odontocode.data.local.NoteDao
+import com.tonymen.odontocode.data.local.NoteDatabase
+import com.tonymen.odontocode.data.local.NoteEntity
 import com.tonymen.odontocode.ui.theme.OdontoCodeTheme
 import com.tonymen.odontocode.viewmodel.NotesViewModel
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
 class NotesActivity : ComponentActivity() {
     private lateinit var createNoteLauncher: ActivityResultLauncher<Intent>
     private val viewModel: NotesViewModel by viewModels()
+    private lateinit var noteDao: NoteDao
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Inicializar el DAO para manejar Room
+        noteDao = NoteDatabase.getDatabase(this).noteDao()
 
         // Crear el launcher para la actividad de crear/editar notas
         createNoteLauncher = registerForActivityResult(
@@ -51,7 +60,10 @@ class NotesActivity : ComponentActivity() {
         ) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 // Actualizar las notas y sincronizar
-                viewModel.refreshNotes()
+                lifecycleScope.launch {
+                    viewModel.refreshNotes()
+                    syncNotesWithRoom() // Sincroniza las notas desde Firestore a la base de datos local
+                }
             }
         }
 
@@ -68,7 +80,10 @@ class NotesActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         // Refrescar las notas cuando se reanude la actividad para mantener la sincronización
-        viewModel.refreshNotes()
+        lifecycleScope.launch {
+            viewModel.refreshNotes()
+            syncNotesWithRoom() // Sincroniza las notas con Room
+        }
     }
 
     override fun onBackPressed() {
@@ -76,6 +91,14 @@ class NotesActivity : ComponentActivity() {
             viewModel.clearSelectedNotes()  // Limpiar la selección si hay elementos seleccionados
         } else {
             super.onBackPressed()  // Salir de la actividad si no hay elementos seleccionados
+        }
+    }
+
+    // Método para sincronizar las notas desde Firestore con Room
+    private suspend fun syncNotesWithRoom() {
+        val notesFromFirestore = viewModel.notesState.value
+        notesFromFirestore.forEach { note ->
+            noteDao.insertOrUpdate(note.toEntity())
         }
     }
 }
@@ -353,3 +376,14 @@ fun NoteCard(note: Note, isSelected: Boolean, onClick: () -> Unit, onLongClick: 
     }
 }
 
+// La función `toEntity()` para convertir `Note` a `NoteEntity` se usa en `syncNotesWithRoom()`
+fun Note.toEntity(): NoteEntity {
+    return NoteEntity(
+        id = this.id,
+        userId = this.userId,
+        nameNote = this.nameNote,
+        content = this.content,
+        dateCreated = this.dateCreated,
+        lastModified = this.lastModified
+    )
+}
